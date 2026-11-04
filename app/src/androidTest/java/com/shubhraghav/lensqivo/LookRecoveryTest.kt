@@ -16,7 +16,7 @@ class LookRecoveryTest {
             val session = CameraSession(context)
             try {
                 session.selectLook(Look.SOL)
-                session.setStrength(.7f)
+                session.changeStrength(.7f)
                 val expected = Look.SOL.matrix(.7f)
                 assertArrayEquals(expected, session.renderMatrix, .00001f)
                 session.retry(true)

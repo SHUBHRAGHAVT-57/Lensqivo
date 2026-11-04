@@ -263,7 +263,7 @@ class CameraSession(private val context: Context) : AutoCloseable {
         updateMatrix()
     }
 
-    fun setStrength(value: Float) {
+    fun changeStrength(value: Float) {
         if (!gate.isIdle() || !value.isFinite() || state.originalOnly) return
         strength = value.coerceIn(0f, 1f)
         updateMatrix()

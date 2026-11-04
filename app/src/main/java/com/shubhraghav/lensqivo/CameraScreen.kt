@@ -245,7 +245,7 @@ private fun Controls(session: CameraSession, audio: Boolean, openSaved: () -> Un
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
                         Text(session.look.getDescription(), color = Muted, style = MaterialTheme.typography.bodySmall)
-                        Slider(value = session.strength, onValueChange = session::setStrength, onValueChangeFinished = session::persistStrength,
+                        Slider(value = session.strength, onValueChange = session::changeStrength, onValueChangeFinished = session::persistStrength,
                             enabled = idle && !session.comparing && session.look != Look.ORIGINAL,
                             modifier = Modifier.semantics { contentDescription = "Look intensity" })
                     }

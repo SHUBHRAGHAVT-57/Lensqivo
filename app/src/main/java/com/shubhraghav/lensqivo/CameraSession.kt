@@ -242,7 +242,7 @@ class CameraSession(private val context: Context) : AutoCloseable {
             photo?.flashMode = if (hasFlash) preferences.flash else ImageCapture.FLASH_MODE_OFF
             val resolution = photo?.resolutionInfo?.resolution ?: video?.resolutionInfo?.resolution
             state = state.copy(front = useFront, canFlip = rear && front,
-                hasFlash = hasFlash, flash = photo?.flashMode ?: ImageCapture.FLASH_MODE_OFF,
+                hasFlash = hasFlash, flash = if (hasFlash) preferences.flash else ImageCapture.FLASH_MODE_OFF,
                 minZoom = zoom?.minZoomRatio ?: 1f, maxZoom = zoom?.maxZoomRatio ?: 1f,
                 zoom = zoom?.zoomRatio ?: 1f,
                 minEv = exposure.exposureCompensationRange.lower,
@@ -311,7 +311,7 @@ class CameraSession(private val context: Context) : AutoCloseable {
     }
     fun persistBeauty() { preferences.smooth = smooth; preferences.glow = glow }
     fun setFlash(value: Int) {
-        if (!gate.isIdle() || !state.hasFlash || state.mode != CaptureMode.PHOTO || value !in 0..2) return
+        if (!gate.isIdle() || !state.hasFlash || value !in 0..2) return
         preferences.flash = value; photo?.flashMode = value; state = state.copy(flash = value)
     }
     fun setTimer(value: Int) {

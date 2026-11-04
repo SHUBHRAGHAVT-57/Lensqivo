@@ -94,6 +94,10 @@ class CameraControlsTest {
         compose.onNodeWithContentDescription("Timer: Off").performClick()
         compose.onNodeWithContentDescription("Timer: 3 seconds").assertIsEnabled().performClick()
         compose.onNodeWithContentDescription("Timer: 10 seconds").assertIsEnabled()
+        compose.runOnIdle { state = state.copy(mode = CaptureMode.VIDEO) }
+        compose.onNodeWithContentDescription("Flash: Auto").assertIsNotEnabled()
+        compose.runOnIdle { state = state.copy(mode = CaptureMode.PHOTO) }
+        compose.onNodeWithContentDescription("Flash: Auto").assertIsEnabled()
         compose.runOnIdle { state = state.copy(hasFlash = false) }
         compose.onNodeWithContentDescription("Flash: Auto").assertIsNotEnabled()
     }

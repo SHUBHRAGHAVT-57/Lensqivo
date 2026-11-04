@@ -19,6 +19,11 @@ jobs:
           distribution: temurin
           java-version: '17'
       - uses: gradle/actions/wrapper-validation@0723195856401067f7a2779048b490ace7a47d7c # v5.0.2
+      - name: Set up Android SDK command-line tools
+        uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4.0.4
+        with:
+          packages: ''
+          log-accepted-android-sdk-licenses: false
       - name: Install required Android platforms
         run: sdkmanager 'platforms;android-37' 'build-tools;36.0.0'
       - name: Core behavior, Android build, lint and test compilation

@@ -16,6 +16,8 @@
 
 ## Written but not executed
 
+Publication CI initially failed because the runner did not expose `sdkmanager`. A pinned Android setup action provisions the command-line tools explicitly. The next run identified that API 37 uses the SDK package ID `platforms;android-37.0`, rather than `platforms;android-37`; the workflow now installs that exact package. These setup failures occurred before Android compilation, so they do not establish an application compile failure or success.
+
 Instrumented tests cover capture action labeling, stop during startup, disabled finalization shutter, disabled look selection, and restoring the actual shader matrix after original-only recovery. They require an Android runtime and dependency resolution. The UI tests are not substitutes for capture tests.
 
 CI is configured with pinned Actions, read-only repository permission, wrapper validation, JDK 17, SDK 37, core checks, Android debug build, lint and instrumented-test compilation. Check the live workflow for results after publication. Android syntax, linkage, lint, packaging, signing behavior and dependency compatibility remain unverified until that build passes.

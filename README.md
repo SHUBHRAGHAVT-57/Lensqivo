@@ -71,7 +71,7 @@ These are original creative color transforms. They do not claim to reproduce a p
 | Tool | Project configuration |
 | :--- | :--- |
 | Android Studio | A version compatible with Android Gradle Plugin 9.2.1 |
-| Android SDK | Platform 37 and Build Tools 36.0.0 |
+| Android SDK | Platform 37.0 (API 37) and Build Tools 36.0.0 |
 | JDK | 17 for the CI build |
 | Gradle | 9.8.2 through the included wrapper |
 | Minimum Android version | Android 10 / API 29 |

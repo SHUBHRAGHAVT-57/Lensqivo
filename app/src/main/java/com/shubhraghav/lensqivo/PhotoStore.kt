@@ -1,9 +1,12 @@
 package com.shubhraghav.lensqivo
 
+import android.content.ContentResolver
 import android.content.ContentValues
 import android.content.Context
 import android.graphics.BitmapFactory
 import android.net.Uri
+import android.os.Build
+import android.os.Bundle
 import android.provider.MediaStore
 import java.io.File
 import java.io.IOException
@@ -123,15 +126,27 @@ class PhotoStore(private val context: Context,
         return null
     }
 
+    @Suppress("DEPRECATION")
     private fun removeInterruptedPublications() {
         val captures = directory.listFiles { file -> file.name.endsWith(".source.jpg") }
             ?.map { "Lensqivo_${it.name.substringBefore('.')}" }?.toSet().orEmpty()
         if (captures.isEmpty()) return
         val resolver = context.contentResolver
-        resolver.query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-            arrayOf(MediaStore.Images.Media._ID, MediaStore.Images.Media.DISPLAY_NAME),
-            "${MediaStore.Images.Media.IS_PENDING} = 1 AND ${MediaStore.Images.Media.OWNER_PACKAGE_NAME} = ? AND ${MediaStore.Images.Media.RELATIVE_PATH} = ?",
-            arrayOf(context.packageName, "DCIM/Lensqivo/"), null)?.use { cursor ->
+        val collection = MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+        val projection = arrayOf(MediaStore.Images.Media._ID, MediaStore.Images.Media.DISPLAY_NAME)
+        val selection = "${MediaStore.Images.Media.IS_PENDING} = 1 AND ${MediaStore.Images.Media.OWNER_PACKAGE_NAME} = ? AND ${MediaStore.Images.Media.RELATIVE_PATH} = ?"
+        val selectionArgs = arrayOf(context.packageName, "DCIM/Lensqivo/")
+        // MediaStore hides pending rows unless explicitly included, even with an IS_PENDING selection.
+        val pending = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            resolver.query(collection, projection, Bundle().apply {
+                putInt(MediaStore.QUERY_ARG_MATCH_PENDING, MediaStore.MATCH_INCLUDE)
+                putString(ContentResolver.QUERY_ARG_SQL_SELECTION, selection)
+                putStringArray(ContentResolver.QUERY_ARG_SQL_SELECTION_ARGS, selectionArgs)
+            }, null)
+        } else {
+            resolver.query(MediaStore.setIncludePending(collection), projection, selection, selectionArgs, null)
+        }
+        pending?.use { cursor ->
             while (cursor.moveToNext()) {
                 val name = cursor.getString(1)
                 if (captures.any { name == "$it.jpg" || name == "${it}_Original.jpg" }) {

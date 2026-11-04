@@ -206,7 +206,7 @@ private fun Viewfinder(session: CameraSession, owner: LifecycleOwner, grid: Bool
                     cornerRadius = CornerRadius(4.dp.toPx()), style = Stroke(1.5.dp.toPx()))
             }
         }
-        val status = when (state.phase) {
+        val status = if (state.countdown > 0) "Self-timer · tap to cancel" else when (state.phase) {
             Phase.STARTING -> "Starting recording…"
             Phase.RECORDING -> "● REC  ${state.seconds / 60}:${(state.seconds % 60).toString().padStart(2, '0')}"
             Phase.FINALIZING -> "Saving video…"
@@ -370,7 +370,8 @@ internal fun CameraSettings(session: CameraSession, audio: Boolean, setAudio: (B
             Text("Three local slots for your look, intensity, smooth and glow.", color = Muted, style = MaterialTheme.typography.bodySmall)
             (1..3).forEach { slot ->
                 val hasRecipe = remember(slot, recipeRevision) { session.preferences.hasRecipe(slot) }
-                Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Panel).padding(12.dp)) {
+                Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Panel).padding(12.dp)
+                    .testTag("recipe-card-$slot")) {
                     Text("Recipe ${slot} · ${if (hasRecipe) "Saved" else "Empty"}", style = MaterialTheme.typography.titleSmall)
                     Row(Modifier.horizontalScroll(rememberScrollState())) {
                         TextButton(onClick = { session.saveRecipe(slot); recipeRevision++ }, enabled = enabled && !state.originalOnly,

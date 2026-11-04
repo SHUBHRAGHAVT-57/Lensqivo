@@ -10,6 +10,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        api: [29, 35]
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
@@ -36,7 +40,7 @@ jobs:
       - name: Native UI, GPU export and photo-transaction regression tests
         uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
         with:
-          api-level: 35
+          api-level: ${{ matrix.api }}
           target: google_apis
           arch: x86_64
           profile: pixel_2
@@ -46,13 +50,12 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none -camera-front none
           script: |
             adb logcat -G 16M
-            bash gradlew :app:connectedDebugAndroidTest --no-daemon
-            adb logcat -d -s LensqivoScreenshot:I '*:S'
+            bash -c 'status=0; bash gradlew :app:connectedDebugAndroidTest --no-daemon || status=$?; adb logcat -d -s LensqivoScreenshot:I "*:S"; exit "$status"'
       - name: Upload development APK and validation reports
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
-          name: lensqivo-development-build
+          name: lensqivo-development-build-api${{ matrix.api }}
           if-no-files-found: warn
           retention-days: 7
           path: |

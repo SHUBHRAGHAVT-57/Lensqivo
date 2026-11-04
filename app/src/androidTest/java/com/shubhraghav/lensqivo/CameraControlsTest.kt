@@ -157,11 +157,22 @@ class CameraControlsTest {
         }
         compose.runOnIdle { session.selectLook(Look.SOL); session.changeSmooth(.25f) }
         (1..3).forEach { slot ->
-            compose.onNodeWithContentDescription("Save recipe $slot", substring = true).performScrollTo().performClick()
+            // Scroll the vertical card before its nested horizontal action row.
+            compose.onNodeWithTag("recipe-card-$slot").performScrollTo().assertIsDisplayed()
+            compose.onNodeWithContentDescription("Save recipe $slot", substring = true)
+                .performScrollTo().assertIsDisplayed().assertIsEnabled().performClick()
+            compose.runOnIdle {
+                assertEquals("Recipe $slot click must reach the session", "Recipe $slot saved on this phone.", session.state.notice)
+                val saved = session.preferences.recipe(slot)
+                assertNotNull("Recipe $slot must persist and parse immediately after its click", saved)
+                assertEquals("Recipe $slot must save the selected look", Look.SOL, saved?.look)
+                assertEquals("Recipe $slot must save the current smooth amount", .25f, saved?.smooth ?: -1f, 0f)
+            }
         }
-        compose.runOnIdle { (1..3).forEach { assertTrue(session.preferences.hasRecipe(it)) } }
+        compose.runOnIdle { (1..3).forEach { assertTrue("Recipe $it must remain saved after saving the other slots", session.preferences.hasRecipe(it)) } }
         compose.onNodeWithText("Reset look & beauty").performScrollTo().performClick()
         compose.runOnIdle { assertEquals(Look.ORIGINAL, session.look); assertEquals(0f, session.smooth) }
+        compose.onNodeWithTag("recipe-card-3").performScrollTo().assertIsDisplayed()
         compose.onNodeWithContentDescription("Load recipe 3").performScrollTo().assertIsEnabled().performClick()
         compose.runOnIdle { assertEquals(Look.SOL, session.look); assertEquals(.25f, session.smooth) }
         compose.waitUntil(10_000) { !session.state.recovering }

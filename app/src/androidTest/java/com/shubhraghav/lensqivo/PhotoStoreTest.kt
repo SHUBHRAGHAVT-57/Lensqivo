@@ -60,16 +60,18 @@ class PhotoStoreTest {
     @Test fun recoveryRemovesOnlyPendingRowsForItsRetainedCapture() {
         withScene { directory, input ->
             val staleExport = File(directory, "photo-export-interrupted.jpg").apply { writeText("interrupted export") }
-            fun pending(name: String): Uri = requireNotNull(context.contentResolver.insert(
+            fun pending(name: String, path: String = "DCIM/Lensqivo"): Uri = requireNotNull(context.contentResolver.insert(
                 MediaStore.Images.Media.EXTERNAL_CONTENT_URI, ContentValues().apply {
                     put(MediaStore.Images.Media.DISPLAY_NAME, name)
                     put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
-                    put(MediaStore.Images.Media.RELATIVE_PATH, "DCIM/Lensqivo")
+                    put(MediaStore.Images.Media.RELATIVE_PATH, path)
                     put(MediaStore.Images.Media.IS_PENDING, 1)
                 }))
             val interrupted = pending("Lensqivo_${input.name.substringBefore('.')}.jpg")
             val unrelated = pending("Lensqivo_unrelated_${UUID.randomUUID()}.jpg")
+            val outside = pending("Lensqivo_${input.name.substringBefore('.')}.jpg", "DCIM/Lensqivo-other")
             try {
+                assertEquals(setOf(interrupted, outside), rowsFor(input).toSet())
                 val recovered = PhotoStore(context, directory).recover()
                 assertEquals(1, recovered.size)
                 assertFalse(staleExport.exists())
@@ -80,10 +82,27 @@ class PhotoStoreTest {
                 context.contentResolver.query(unrelated, arrayOf(MediaStore.Images.Media._ID), null, null, null).use {
                     assertEquals(1, requireNotNull(it).count)
                 }
+                assertEquals(setOf(recovered.single().media.uri, outside), rowsFor(input).toSet())
             } finally {
                 context.contentResolver.delete(interrupted, null, null)
                 context.contentResolver.delete(unrelated, null, null)
+                context.contentResolver.delete(outside, null, null)
             }
+        }
+    }
+
+    @Test fun recoveryPreservesCommittedEditForItsRetainedCapture() {
+        withScene { directory, input ->
+            val bytes = input.readBytes()
+            val store = PhotoStore(context, directory) { _, source, edited, _ -> source.copyTo(edited); Unit }
+            val edited = store.export(input, RenderRecipe(Look.SOL), false)
+            input.writeBytes(bytes)
+            val recovered = store.recover().single()
+            assertEquals(setOf(edited.media.uri, recovered.media.uri), rowsFor(input).toSet())
+            context.contentResolver.openInputStream(edited.media.uri).use {
+                assertArrayEquals(bytes, requireNotNull(it).readBytes())
+            }
+            assertFalse(input.exists())
         }
     }
 
@@ -112,9 +131,10 @@ class PhotoStoreTest {
         }
     }
 
+    @Suppress("DEPRECATION")
     private fun rowsFor(input: File): List<Uri> {
         val rows = mutableListOf<Uri>()
-        context.contentResolver.query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+        context.contentResolver.query(MediaStore.setIncludePending(MediaStore.Images.Media.EXTERNAL_CONTENT_URI),
             arrayOf(MediaStore.Images.Media._ID),
             "${MediaStore.Images.Media.DISPLAY_NAME} LIKE ? AND ${MediaStore.Images.Media.OWNER_PACKAGE_NAME} = ?",
             arrayOf("Lensqivo_${input.name.substringBefore('.')}%", context.packageName), null)?.use { cursor ->

@@ -25,7 +25,7 @@ android {
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"))
         }
     }
-    lint { abortOnError = true; warningsAsErrors = true }
+    lint { abortOnError = true; warningsAsErrors = true; textReport = true }
 }
 dependencies {
     implementation(project(":core"))

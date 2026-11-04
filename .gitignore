@@ -1,0 +1,11 @@
+.gradle/
+.gradle-user-home/
+.kotlin/
+.idea/
+**/build/
+local.properties
+*.iml
+*.jks
+*.keystore
+.superpowers/
+docs/superpowers/

@@ -22,7 +22,7 @@
 
 > **Development build · v0.2.0**
 >
-> This iteration introduces native still capture, natural beauty controls and a camera-first interface. [Get the latest successful development build from GitHub Actions](https://github.com/SHUBHRAGHAVT-57/Lensqivo/actions/workflows/android.yml). Check its validation result before installing. Real-camera quality and cross-device performance require physical-device qualification; this is not a production release. The cover is AI-generated brand artwork, **not** an app screenshot or a photograph captured with Lensqivo.
+> Native still capture, natural beauty controls and a camera-first interface. [Download the verified development build](https://github.com/SHUBHRAGHAVT-57/Lensqivo/actions/runs/41894821675/artifacts/13355836022). Debug compilation, strict lint, 814 core assertions and 31 native tests on each of two emulator OS versions pass in [CI](https://github.com/SHUBHRAGHAVT-57/Lensqivo/actions/runs/41894821675). Physical-camera quality and performance still require qualification; this is not a production release. The cover is AI-generated brand artwork, **not** an app screenshot or a photograph captured with Lensqivo.
 
 ## A name with a point of view
 
@@ -36,6 +36,14 @@ The idea is simple: a camera that puts the moment first, with a small collection
 
 ## The camera
 
+<p align="center">
+  <img src="assets/ui-camera-sample.jpg" width="240" alt="Native Lensqivo camera UI with compact toolbar, sample scene and fixed shutter dock" />
+  <img src="assets/ui-looks-sample.jpg" width="240" alt="Native Looks drawer with photographic sample thumbnails, intensity and Before comparison" />
+  <img src="assets/ui-beauty-sample.jpg" width="240" alt="Native Beauty drawer with natural smooth and soft glow controls" />
+</p>
+
+Native Compose UI rendered in an isolated emulator with a generated sample scene. The images illustrate the interface; physical-camera image quality requires separate validation. [Screenshot provenance](assets/README.md).
+
 The following features are **implemented in source**. Device qualification is tracked separately in the [validation record](docs/validation.md).
 
 | Capture | Color | Control |
@@ -46,7 +54,7 @@ The following features are **implemented in source**. Device qualification is tr
 | Optional microphone audio | Skin-color-selective smoothness and soft glow | Composition grid, flash and 3/10-second timer |
 | Private interrupted-photo recovery | Three reusable offline recipe slots | Saved-selfie mirroring and optional original copies |
 
-The viewfinder leads. A stable shutter dock and compact toolbar keep the camera ready; Looks, Beauty and Adjust open only when needed. Settings group photo, video, composition, creative defaults and saving. A recording remains owned until CameraX reports finalization. Sound interruptions are surfaced instead of treating microphone permission as proof of recorded audio.
+The viewfinder leads. A stable shutter dock and compact toolbar keep the camera ready; Looks, Beauty and Adjust open only when needed. Creative drawers cover at most 56% of the fitted viewfinder height, with a 240dp cap; scrolling keeps controls reachable in smaller windows. Settings group photo, video, composition, creative defaults and saving. A recording remains owned until CameraX reports finalization. Sound interruptions are surfaced instead of treating microphone permission as proof of recorded audio.
 
 ### Eight looks, room to make them yours
 
@@ -117,6 +125,10 @@ node scripts/test-core.mjs
 
 The current suite passes **814 assertions** covering capture ownership, repeated taps, stop-before-start, finalization, stale callbacks and color-transform behavior. This assertion count is not a claim of 814 independent test scenarios.
 
+### Try the development APK
+
+Open the [verified build artifact](https://github.com/SHUBHRAGHAVT-57/Lensqivo/actions/runs/41894821675/artifacts/13355836022), sign in to GitHub if requested, download the ZIP and extract `app-debug.apk`. Open the APK on your Android phone and permit installation from your chosen browser/file manager when Android asks. The APK supports Android 10 and newer; the artifact's API suffix identifies the test emulator. Artifacts are retained for seven days.
+
 On an isolated Android test device or emulator, run the instrumented UI/recovery tests with:
 
 ~~~sh
@@ -147,18 +159,19 @@ The CameraX Media3 adapter is currently **`1.0.0-alpha04`**. Its integration is 
 
 | Gate | Current evidence |
 | :--- | :--- |
-| Core behavior | 814 assertions executed successfully locally; current CI result linked below |
+| Core behavior | 814 assertions passed locally and in CI |
 | Manifest and resource XML | Parsed successfully |
 | Source formatting checks | `git diff --check` passed before publication |
-| Android build and lint | [Current workflow results](https://github.com/SHUBHRAGHAVT-57/Lensqivo/actions/workflows/android.yml); previous v0.1 source passed |
-| Instrumented tests | CI configured to execute native Compose, GPU export, preferences and MediaStore regression tests on an isolated emulator |
+| Android build and strict lint | [Passed at a51885d](https://github.com/SHUBHRAGHAVT-57/Lensqivo/actions/runs/41894821675) |
+| Instrumented tests | 31 passed on API 29 and 31 passed on API 35 |
+| Native UI rendering | Camera, production Looks/Beauty drawers and contrast inspected from actual emulator captures |
 | Real photo/video, GPU parity and accessibility | Device qualification pending |
 
-The [Android quality workflow](https://github.com/SHUBHRAGHAVT-57/Lensqivo/actions/workflows/android.yml) validates the wrapper, runs the core gate, builds the debug app, runs strict Android lint, compiles the instrumented tests and executes them on an isolated emulator. Synthetic scenes test UI and export correctness; these do not validate a physical camera or certify thermal performance. Check the actual workflow result before relying on an artifact.
+The [Android quality workflow](https://github.com/SHUBHRAGHAVT-57/Lensqivo/actions/workflows/android.yml) validates the wrapper, runs the core gate, builds the debug app, runs strict Android lint, compiles the instrumented tests and executes them on isolated API 29 and API 35 emulators. Synthetic scenes test UI and export correctness; physical cameras, codecs under capture load and thermal performance need separate tests. Check the workflow result before relying on an artifact.
 
 ### What comes next
 
-1. Pass the complete Android build and qualify real JPEG/MP4 capture across representative devices.
+1. Qualify real JPEG/MP4 capture across representative physical devices.
 2. Verify preview/output framing, color, mirroring and saved resolution with test charts.
 3. Stress recording lifecycle, sound interruptions, low storage and process death.
 4. Refine film-style tone and grain only after the existing capture path is proven.

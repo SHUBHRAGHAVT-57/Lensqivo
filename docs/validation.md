@@ -2,15 +2,19 @@
 
 ## Version 0.2 iteration
 
+**Verified source:** `a51885d315e176f639aac929b2551b527d38400b`. [Actions run 41894821675](https://github.com/SHUBHRAGHAVT-57/Lensqivo/actions/runs/41894821675) passed both API 29 and API 35 jobs on 4 November 2026 UTC (5 November locally). Each job passed `:core:check`, `:app:assembleDebug`, strict `:app:lintDebug`, `:app:assembleDebugAndroidTest` and `:app:connectedDebugAndroidTest`: **814 core assertions and 31 passing native tests per emulator**. The API 35 [APK/report artifact](https://github.com/SHUBHRAGHAVT-57/Lensqivo/actions/runs/41894821675/artifacts/13355836022) is a development build.
+
 - Local core suite: **814 assertions passed** after adding Cove, Ember, Petal and Fade; the added palette test first failed against the original four-look implementation.
 - Native still capture now avoids targeting ImageCapture with a shared surface effect. Photo export uses a shared SDR shader with overlapping region-decoded tiles, retains captured dimensions/EXIF orientation, and preserves the native original on an edit failure.
 - Added regression coverage for original JPEG byte preservation, tiled grayscale/color processing, non-square orientation, EXIF retention/GPS exclusion on edited copies, skin-texture/edge behavior, tile seams, invalid input, main-thread rejection, MediaStore pending publication, failed-edit fallback, preference validation and local recipes.
-- CI now executes instrumented tests on an isolated API 35 x86_64 software-GPU emulator, with cameras disabled. This tests synthetic UI/export fixtures, not real camera behavior. Check the current workflow result; test execution is not established merely by configuration.
+- CI executes instrumented tests on isolated API 29/35 x86_64 software-GPU emulators, with cameras disabled. This tests synthetic UI/export fixtures, not real camera behavior. Production camera chrome and Looks/Beauty drawer captures were decoded from numbered logs and visually inspected after final source edits; they are shown in the README using generated reference artwork.
+- Native tests and visual review exposed concrete integration issues before handoff: implicit Compose layout-receiver access, a KTX lint violation, hidden pending MediaStore collection rows, default black text on dark backgrounds, nested test-scroll targeting, a host-clipped layout fixture and repeated test cleanup of an already-deleted URI. Corrections preserve strict checks and strengthen assertions. Pending-row queries explicitly include pending content on both API paths while retaining owner/path/capture restrictions. Photo flash preferences now remain configurable in settings while video is idle; the video toolbar stays disabled for flash.
+- Pixel-based contrast checks require readable default text; layout tests retain full-width/aspect and before/after viewport/shutter bounds, verify unclipped fixtures, cap production drawers, and exercise 200% text in compact landscape. Software-emulator evidence does not certify TalkBack or physical GPU performance.
 - The exact shared GLSL was exercised separately in Chromium/SwiftShader: zero byte error for neutral live/JPEG transforms and for full-frame versus overlapping tiled output in the synthetic fixture. Removing overlap changed pixels, demonstrating fixture sensitivity. This is software-renderer evidence, not Android camera, hardware GPU, FPS or thermal qualification.
 - No local SDK/adb is available. An attempted Android test compilation failed during Gradle distribution download with `SocketException: Permission denied: getsockopt`, before Kotlin compilation.
 - Private device information and user screenshots are excluded from source, artwork and public documentation. The bundled sample still life is separately generated artwork.
 
-## Executed here
+## Historical version 0.1 baseline
 
 - The initial implementation was prepared in a separate local repository on `develop`. The owner subsequently selected the name Lensqivo and explicitly authorized publication to `SHUBHRAGHAVT-57/Lensqivo`. No FilterCam files were changed.
 - `node scripts/test-core.mjs`: **421 assertions passed**, using Java 25.0.2 with Java 17 output target. Exercises repeated taps, startup stop, finalization ownership, stale callbacks, matrix intensity/neutrality, mono and finite-value behavior.
@@ -24,7 +28,7 @@
 - Fresh independent source review confirmed effect target combinations and key APIs, found original-only recovery matrix restoration and implicit rear-camera Play filtering issues; both corrected. Front-video mirroring also corrected against official documentation.
 - Final review of the correction pass found no new concrete source blockers. XML parsing passed for all four manifest/resource XML files, and `git diff --check` passed after all new files were registered for intent-to-add. Intent-to-add records paths for review without staging file contents or making a commit. Core assertions were rerun successfully after the final source edits.
 
-## CI verification and tests still outstanding
+## Historical version 0.1 CI verification
 
 On 4 November 2026, [Actions run 41839194868](https://github.com/SHUBHRAGHAVT-57/Lensqivo/actions/runs/41839194868) completed successfully at source commit `ed85c25193738e503dc4b42286e0279e25473764`. The required `:core:check`, `:app:assembleDebug`, `:app:lintDebug` and `:app:assembleDebugAndroidTest` tasks passed with warnings treated as errors in Android lint. The development APK and lint report are available in its `lensqivo-development-build` artifact. Instrumented tests were compiled, not executed.
 
@@ -65,8 +69,9 @@ Stress background/foreground and configuration changes during countdown, STARTIN
 ## Before a release
 
 - [x] Android dependency resolution, strict core check, debug build, Android lint and test APK compilation pass in CI.
+- [x] All 31 native synthetic regression tests pass on each of API 29 and API 35; final native camera/Looks/Beauty UI images visually inspected.
 - [ ] Minified release build and production signing pass.
-- [ ] Instrumented tests pass; actual JPEG/MP4 files decode correctly on the device matrix.
+- [ ] Actual camera JPEG/MP4 files decode correctly on the physical-device matrix.
 - [ ] Preview/capture framing, mirroring, output dimensions and look parity pass chart tests.
 - [ ] Denied/revoked permissions, camera contention, storage-full and lifecycle interruption fail clearly without false success.
 - [ ] Long recording, audio interruption, partial file recovery and broken-output cleanup verified.

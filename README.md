@@ -20,9 +20,9 @@
   <a href="#development-status">Development status</a>
 </p>
 
-> **Early development · v0.1.0**
+> **Development build · v0.1.0**
 >
-> This repository contains the first application source. Core behavior tests pass locally; Android compilation, real capture and device UI verification are still pending. There is no verified installable release yet. The cover is AI-generated brand artwork, **not** an app screenshot or a photograph captured with Lensqivo.
+> CI passes the core assertions, debug app build, strict Android lint and instrumented-test APK compilation. [Get the development build from GitHub Actions](https://github.com/SHUBHRAGHAVT-57/Lensqivo/actions/runs/41839194868). Real camera capture, GPU rendering and device UI validation remain pending; this is not a production-qualified release. The cover is AI-generated brand artwork, **not** an app screenshot or a photograph captured with Lensqivo.
 
 ## A name with a point of view
 
@@ -134,11 +134,11 @@ The CameraX Media3 adapter is currently **`1.0.0-alpha04`**. Its integration is 
 
 | Gate | Current evidence |
 | :--- | :--- |
-| Core behavior | 421 assertions executed successfully locally |
+| Core behavior | 421 assertions executed successfully locally and in CI |
 | Manifest and resource XML | Parsed successfully |
 | Source formatting checks | `git diff --check` passed before publication |
-| Android build and lint | CI configured; local execution blocked by missing SDK/network access |
-| Instrumented tests | Written; not yet executed |
+| Android build and lint | [Passed in CI at ed85c25](https://github.com/SHUBHRAGHAVT-57/Lensqivo/actions/runs/41839194868) |
+| Instrumented tests | Test APK compiles; tests have not been executed on a device |
 | Real photo/video, GPU parity and accessibility | Device qualification pending |
 
 The [Android quality workflow](https://github.com/SHUBHRAGHAVT-57/Lensqivo/actions/workflows/android.yml) validates the wrapper, runs the core gate, builds the debug app, runs Android lint and compiles the instrumented tests. It does **not** run a camera or execute device tests. Check the actual workflow result before relying on an artifact.

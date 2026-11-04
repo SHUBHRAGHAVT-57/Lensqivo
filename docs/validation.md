@@ -5,7 +5,7 @@
 - The initial implementation was prepared in a separate local repository on `develop`. The owner subsequently selected the name Lensqivo and explicitly authorized publication to `SHUBHRAGHAVT-57/Lensqivo`. No FilterCam files were changed.
 - `node scripts/test-core.mjs`: **421 assertions passed**, using Java 25.0.2 with Java 17 output target. Exercises repeated taps, startup stop, finalization ownership, stale callbacks, matrix intensity/neutrality, mono and finite-value behavior.
 - Initial tests failed with missing CaptureGate/Look, then passed after implementation.
-- With `javac -Xlint:all`, this local JDK fails writing the nested `CaptureGate$Phase.class`; removing that optional flag makes the same sources compile and all tests execute. Root cause in the local compiler/environment remains unresolved. The portable launcher uses `-Werror`; Gradle's core gate retains `-Xlint:all -Werror` for CI on JDK 17. Strict Gradle compilation has not run.
+- With `javac -Xlint:all`, this local JDK fails writing the nested `CaptureGate$Phase.class`; removing that optional flag makes the same sources compile and all tests execute. Root cause in the local compiler/environment remains unresolved. The portable launcher uses `-Werror`; Gradle's core gate retains `-Xlint:all -Werror` and now passes on JDK 17 in CI, including all 421 assertions.
 - PowerShell script execution is disabled locally. The test launcher uses Node; no execution policy was changed.
 - Retrieved the official Gradle v9.8.2 wrapper JAR/scripts; JAR SHA-256: `3b8a25775a69158b5ad2b1d17a80a88dc7b40a352a73eb27d06c612a7ce68e98`. Distribution SHA-256 pinned from Gradle's own Dockerfile.
 - Attempted `gradlew.bat :core:check :app:assembleDebug :app:lintDebug :app:assembleDebugAndroidTest --no-daemon`. Java's environment resolved the default Gradle home to `C:\.gradle`, which is unwritable. Retried with `--gradle-user-home .gradle-user-home`: wrapper download then failed with `java.net.SocketException: Permission denied: getsockopt`. No Android tasks executed.
@@ -14,13 +14,15 @@
 - Fresh independent source review confirmed effect target combinations and key APIs, found original-only recovery matrix restoration and implicit rear-camera Play filtering issues; both corrected. Front-video mirroring also corrected against official documentation.
 - Final review of the correction pass found no new concrete source blockers. XML parsing passed for all four manifest/resource XML files, and `git diff --check` passed after all new files were registered for intent-to-add. Intent-to-add records paths for review without staging file contents or making a commit. Core assertions were rerun successfully after the final source edits.
 
-## Written but not executed
+## CI verification and tests still outstanding
+
+On 4 November 2026, [Actions run 41839194868](https://github.com/SHUBHRAGHAVT-57/Lensqivo/actions/runs/41839194868) completed successfully at source commit `ed85c25193738e503dc4b42286e0279e25473764`. The required `:core:check`, `:app:assembleDebug`, `:app:lintDebug` and `:app:assembleDebugAndroidTest` tasks passed with warnings treated as errors in Android lint. The development APK and lint report are available in its `lensqivo-development-build` artifact. Instrumented tests were compiled, not executed.
 
 Publication CI initially failed because the runner did not expose `sdkmanager`. A pinned Android setup action provisions the command-line tools explicitly. The next run identified that API 37 uses the SDK package ID `platforms;android-37.0`, rather than `platforms;android-37`; the workflow now installs that exact package. These setup failures occurred before Android compilation, so they do not establish an application compile failure or success.
 
 Instrumented tests cover capture action labeling, stop during startup, disabled finalization shutter, disabled look selection, and restoring the actual shader matrix after original-only recovery. They require an Android runtime and dependency resolution. The UI tests are not substitutes for capture tests.
 
-CI is configured with pinned Actions, read-only repository permission, wrapper validation, JDK 17, SDK 37, core checks, Android debug build, lint and instrumented-test compilation. Check the live workflow for results after publication. Android syntax, linkage, lint, packaging, signing behavior and dependency compatibility remain unverified until that build passes.
+CI is configured with pinned Actions, read-only repository permission, wrapper validation, JDK 17, SDK 37.0, core checks, Android debug build, lint and instrumented-test compilation. CI exposed and verified corrections for nested Compose layout receiver access, an intensity-setter JVM signature collision, standalone core-test task wiring, modern backup exclusion rules, and the existing Kotlin helper APIs. Debug compilation, dependency resolution, packaging and lint are verified by the linked run. Minified release builds, production signing and real-device behavior remain unverified.
 
 ## Hardware acceptance matrix
 
@@ -52,7 +54,8 @@ Stress background/foreground and configuration changes during STARTING, RECORDIN
 
 ## Before a release
 
-- [ ] Android dependency resolution, strict core check, debug/release build, Android lint and test APK compilation pass.
+- [x] Android dependency resolution, strict core check, debug build, Android lint and test APK compilation pass in CI.
+- [ ] Minified release build and production signing pass.
 - [ ] Instrumented tests pass; actual JPEG/MP4 files decode correctly on the device matrix.
 - [ ] Preview/capture framing, mirroring, output dimensions and look parity pass chart tests.
 - [ ] Denied/revoked permissions, camera contention, storage-full and lifecycle interruption fail clearly without false success.

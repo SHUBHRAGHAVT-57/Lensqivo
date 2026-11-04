@@ -13,3 +13,8 @@ val coreCheck by tasks.registering(JavaExec::class) {
     mainClass.set("com.shubhraghav.lensqivo.core.CoreTests")
 }
 tasks.check { dependsOn(coreCheck) }
+tasks.test {
+    // Core behavior uses the standalone assertion runner rather than JUnit discovery.
+    dependsOn(coreCheck)
+    enabled = false
+}

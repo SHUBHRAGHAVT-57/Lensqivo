@@ -144,7 +144,8 @@ internal fun CameraFrame(ratio: Float, toolbar: @Composable () -> Unit,
     Column(Modifier.fillMaxSize().testTag("camera-frame")) {
         toolbar()
         BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {
-            val wide = maxWidth > maxHeight && maxWidth >= 480.dp
+            val availableWidth = maxWidth
+            val wide = availableWidth > maxHeight && availableWidth >= 480.dp
             val panelHeight = maxHeight * .8f
             val previewContent: @Composable () -> Unit = {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -157,7 +158,7 @@ internal fun CameraFrame(ratio: Float, toolbar: @Composable () -> Unit,
             }
             if (wide) Row(Modifier.fillMaxSize()) {
                 Box(Modifier.weight(1f).fillMaxHeight()) { previewContent() }
-                Box(Modifier.width(if (maxWidth < 700.dp) 208.dp else 224.dp).fillMaxHeight()) { dock(true) }
+                Box(Modifier.width(if (availableWidth < 700.dp) 208.dp else 224.dp).fillMaxHeight()) { dock(true) }
             } else Column(Modifier.fillMaxSize()) {
                 Box(Modifier.fillMaxWidth().weight(1f)) { previewContent() }
                 dock(false)

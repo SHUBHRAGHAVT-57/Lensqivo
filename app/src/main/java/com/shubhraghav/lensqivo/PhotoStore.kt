@@ -52,6 +52,8 @@ class PhotoStore(private val context: Context,
 
     fun recover(): List<Result> {
         removeInterruptedPublications()
+        directory.listFiles { file -> file.name.endsWith(".edit.jpg") ||
+            file.name.startsWith("photo-export-") && file.name.endsWith(".jpg") }?.forEach { it.delete() }
         val recovered = mutableListOf<Result>()
         directory.listFiles { file -> file.name.endsWith(".source.jpg") }?.sortedBy { it.lastModified() }
             ?.forEach { file ->
@@ -59,7 +61,6 @@ class PhotoStore(private val context: Context,
                     recovered += publishOriginal(file, "An interrupted capture was recovered as an original.")
                 }
             }
-        directory.listFiles { file -> file.name.endsWith(".edit.jpg") }?.forEach { it.delete() }
         return recovered
     }
 
@@ -67,11 +68,16 @@ class PhotoStore(private val context: Context,
         MediaStore.Images.Media.EXTERNAL_CONTENT_URI to "image/jpeg",
         MediaStore.Video.Media.EXTERNAL_CONTENT_URI to "video/mp4",
     ).mapNotNull { (collection, mime) ->
-        context.contentResolver.query(collection, arrayOf(MediaStore.MediaColumns._ID, MediaStore.MediaColumns.DATE_ADDED),
+        context.contentResolver.query(collection, arrayOf(MediaStore.MediaColumns._ID, MediaStore.MediaColumns.DATE_ADDED,
+            MediaStore.MediaColumns.DISPLAY_NAME),
             "${MediaStore.MediaColumns.OWNER_PACKAGE_NAME} = ? AND ${MediaStore.MediaColumns.IS_PENDING} = 0",
-            arrayOf(context.packageName), "${MediaStore.MediaColumns.DATE_ADDED} DESC")?.use { cursor ->
-            if (!cursor.moveToFirst()) null else cursor.getLong(1) to SavedMedia(
-                android.content.ContentUris.withAppendedId(collection, cursor.getLong(0)), mime)
+            arrayOf(context.packageName), "${MediaStore.MediaColumns.DATE_ADDED} DESC, ${MediaStore.MediaColumns._ID} DESC")?.use { cursor ->
+            if (!cursor.moveToFirst()) null else {
+                val name = cursor.getString(2)
+                val edit = if (mime == "image/jpeg" && name.endsWith("_Original.jpg"))
+                    committedPhoto(name.removeSuffix("_Original.jpg") + ".jpg") else null
+                cursor.getLong(1) to SavedMedia(edit ?: android.content.ContentUris.withAppendedId(collection, cursor.getLong(0)), mime)
+            }
         }
     }.maxByOrNull { it.first }?.second
 
@@ -85,12 +91,7 @@ class PhotoStore(private val context: Context,
         val resolver = context.contentResolver
         val name = "Lensqivo_${file.name.substringBefore('.')}$suffix.jpg"
         // Retrying after process death must not duplicate a photo that already committed.
-        resolver.query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, arrayOf(MediaStore.Images.Media._ID),
-            "${MediaStore.Images.Media.DISPLAY_NAME} = ? AND ${MediaStore.Images.Media.RELATIVE_PATH} = ? AND ${MediaStore.Images.Media.IS_PENDING} = 0 AND ${MediaStore.Images.Media.OWNER_PACKAGE_NAME} = ?",
-            arrayOf(name, "DCIM/Lensqivo/", context.packageName), null)?.use { cursor ->
-            if (cursor.moveToFirst()) return android.content.ContentUris.withAppendedId(
-                MediaStore.Images.Media.EXTERNAL_CONTENT_URI, cursor.getLong(0))
-        }
+        committedPhoto(name)?.let { return it }
         val values = ContentValues().apply {
             put(MediaStore.Images.Media.DISPLAY_NAME, name)
             put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
@@ -110,6 +111,16 @@ class PhotoStore(private val context: Context,
             runCatching { resolver.delete(uri, null, null) }
             throw error
         }
+    }
+
+    private fun committedPhoto(name: String): Uri? {
+        context.contentResolver.query(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, arrayOf(MediaStore.Images.Media._ID),
+            "${MediaStore.Images.Media.DISPLAY_NAME} = ? AND ${MediaStore.Images.Media.RELATIVE_PATH} = ? AND ${MediaStore.Images.Media.IS_PENDING} = 0 AND ${MediaStore.Images.Media.OWNER_PACKAGE_NAME} = ?",
+            arrayOf(name, "DCIM/Lensqivo/", context.packageName), null)?.use { cursor ->
+            if (cursor.moveToFirst()) return android.content.ContentUris.withAppendedId(
+                MediaStore.Images.Media.EXTERNAL_CONTENT_URI, cursor.getLong(0))
+        }
+        return null
     }
 
     private fun removeInterruptedPublications() {

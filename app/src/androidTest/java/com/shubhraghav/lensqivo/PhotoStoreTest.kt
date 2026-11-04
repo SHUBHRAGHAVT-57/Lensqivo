@@ -59,6 +59,7 @@ class PhotoStoreTest {
 
     @Test fun recoveryRemovesOnlyPendingRowsForItsRetainedCapture() {
         withScene { directory, input ->
+            val staleExport = File(directory, "photo-export-interrupted.jpg").apply { writeText("interrupted export") }
             fun pending(name: String): Uri = requireNotNull(context.contentResolver.insert(
                 MediaStore.Images.Media.EXTERNAL_CONTENT_URI, ContentValues().apply {
                     put(MediaStore.Images.Media.DISPLAY_NAME, name)
@@ -71,6 +72,7 @@ class PhotoStoreTest {
             try {
                 val recovered = PhotoStore(context, directory).recover()
                 assertEquals(1, recovered.size)
+                assertFalse(staleExport.exists())
                 assertFalse(input.exists())
                 context.contentResolver.query(interrupted, arrayOf(MediaStore.Images.Media._ID), null, null, null).use {
                     assertEquals(0, requireNotNull(it).count)
@@ -82,6 +84,15 @@ class PhotoStoreTest {
                 context.contentResolver.delete(interrupted, null, null)
                 context.contentResolver.delete(unrelated, null, null)
             }
+        }
+    }
+
+    @Test fun galleryResumePrefersTheEditedCopyOfAPairedCapture() {
+        withScene { directory, input ->
+            val store = PhotoStore(context, directory) { _, source, edited, _ -> source.copyTo(edited); Unit }
+            val result = store.export(input, RenderRecipe(Look.SOL), true)
+            assertEquals(2, rowsFor(input).size)
+            assertEquals(result.media, store.latest())
         }
     }
 

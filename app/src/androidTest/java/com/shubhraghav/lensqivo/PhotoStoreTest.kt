@@ -68,7 +68,8 @@ class PhotoStoreTest {
                     put(MediaStore.Images.Media.IS_PENDING, 1)
                 }))
             val interrupted = pending("Lensqivo_${input.name.substringBefore('.')}.jpg")
-            val unrelated = pending("Lensqivo_unrelated_${UUID.randomUUID()}.jpg")
+            val unrelatedInput = File(directory, "unrelated_${UUID.randomUUID()}.source.jpg")
+            val unrelated = pending("Lensqivo_${unrelatedInput.name.substringBefore('.')}.jpg")
             val outside = pending("Lensqivo_${input.name.substringBefore('.')}.jpg", "DCIM/Lensqivo-other")
             try {
                 assertEquals(setOf(interrupted, outside), rowsFor(input).toSet())
@@ -84,9 +85,9 @@ class PhotoStoreTest {
                 }
                 assertEquals(setOf(recovered.single().media.uri, outside), rowsFor(input).toSet())
             } finally {
-                context.contentResolver.delete(interrupted, null, null)
-                context.contentResolver.delete(unrelated, null, null)
-                context.contentResolver.delete(outside, null, null)
+                (rowsFor(input) + rowsFor(unrelatedInput)).forEach {
+                    context.contentResolver.delete(it, null, null)
+                }
             }
         }
     }

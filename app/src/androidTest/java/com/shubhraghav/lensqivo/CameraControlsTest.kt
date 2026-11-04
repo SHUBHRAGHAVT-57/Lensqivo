@@ -8,8 +8,9 @@ import androidx.camera.core.ImageCapture
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -23,6 +24,7 @@ import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
+import androidx.core.graphics.ColorUtils
 import androidx.test.platform.app.InstrumentationRegistry
 import com.shubhraghav.lensqivo.core.CaptureGate.Phase
 import com.shubhraghav.lensqivo.core.Look
@@ -98,16 +100,32 @@ class CameraControlsTest {
 
     @Test fun creativeDrawerDoesNotShrinkOrMoveFullWidthPhotoViewport() {
         var tool by mutableStateOf<CreativeTool?>(null)
+        var fixtureDensity = 0f
         compose.setContent {
-            LensqivoTheme {
-                Box(Modifier.size(320.dp, 680.dp)) {
-                    CameraFrame(3f / 4f, toolbar = { Spacer(Modifier.fillMaxWidth().height(52.dp)) },
-                        dock = { TestDock(CameraUiState(ready = true), select = { tool = it }) }, preview = {},
-                        creativePanel = if (tool == null) null else ({ Box(Modifier.fillMaxWidth().height(240.dp).background(Color.DarkGray)) }))
+            BoxWithConstraints(Modifier.fillMaxSize().testTag("fixture-host")) {
+                val hostDensity = LocalDensity.current
+                val fittingDensity = minOf(hostDensity.density, (constraints.maxWidth - 1) / 320f, (constraints.maxHeight - 1) / 680f)
+                fixtureDensity = fittingDensity
+                CompositionLocalProvider(LocalDensity provides Density(fittingDensity, hostDensity.fontScale)) {
+                    LensqivoTheme {
+                        Box(Modifier.size(320.dp, 680.dp).testTag("fixture-bounds")) {
+                            CameraFrame(3f / 4f, toolbar = { Spacer(Modifier.fillMaxWidth().height(52.dp)) },
+                                dock = { TestDock(CameraUiState(ready = true), select = { tool = it }) }, preview = {},
+                                creativePanel = if (tool == null) null else ({ Box(Modifier.fillMaxWidth().height(240.dp).background(Color.DarkGray)) }))
+                        }
+                    }
                 }
             }
         }
+        val host = compose.onNodeWithTag("fixture-host").fetchSemanticsNode().boundsInRoot
+        val fixture = compose.onNodeWithTag("fixture-bounds").fetchSemanticsNode().boundsInRoot
+        Log.i("LensqivoLayout", "Drawer fixture: host=$host, fixture=$fixture, density=$fixtureDensity")
+        assertEquals("Fixture must retain its requested logical width inside host $host", 320f * fixtureDensity, fixture.width, 1f)
+        assertEquals("Fixture must retain its requested logical height inside host $host", 680f * fixtureDensity, fixture.height, 1f)
+        assertTrue("Fixture $fixture must fit without clipping inside host $host",
+            fixture.left >= host.left && fixture.top >= host.top && fixture.right <= host.right && fixture.bottom <= host.bottom)
         val frame = compose.onNodeWithTag("camera-frame").fetchSemanticsNode().boundsInRoot
+        assertEquals("Camera frame must fill the unclipped fixture", fixture, frame)
         val before = compose.onNodeWithTag("viewfinder").fetchSemanticsNode().boundsInRoot
         assertEquals(frame.width, before.width, 1f)
         assertEquals(4f / 3f, before.height / before.width, .01f)
@@ -194,14 +212,37 @@ class CameraControlsTest {
         assertFalse(pixels.contentEquals(gradeSamplePixels(pixels, Look.SOL, .7f)))
     }
 
+    @Test fun defaultTextHasReadableRenderedContrastOnDarkPanel() {
+        compose.setContent {
+            CompositionLocalProvider(LocalContentColor provides Color.Black) {
+                LensqivoTheme {
+                    Box(Modifier.size(160.dp, 64.dp).background(MaterialTheme.colorScheme.surface).testTag("contrast-panel"),
+                        contentAlignment = Alignment.Center) {
+                        Text("Looks", style = MaterialTheme.typography.titleLarge)
+                    }
+                }
+            }
+        }
+        val bitmap = compose.onNodeWithTag("contrast-panel").captureToImage().asAndroidBitmap()
+        val pixels = IntArray(bitmap.width * bitmap.height)
+        bitmap.getPixels(pixels, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
+        val readableGlyphPixels = pixels.count { ColorUtils.calculateContrast(it, 0xFF232422.toInt()) >= 4.5 }
+        assertTrue("Default Text must paint bright glyphs with at least 4.5:1 contrast on the dark panel; found $readableGlyphPixels pixels",
+            readableGlyphPixels >= 20)
+    }
+
     /** Native Compose screenshots of production chrome with a clearly marked, public-safe sample. */
     @Test fun nativeCameraAndLooksScreenshots() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val reference = context.assets.open("samples/look-reference.jpg").use { requireNotNull(BitmapFactory.decodeStream(it)) }
         var tool by mutableStateOf<CreativeTool?>(null)
+        var maxPanelHeightPx = 0f
         val state = CameraUiState(ready = true, hasFlash = true, canFlip = true, minZoom = 1f, maxZoom = 4f, minEv = -3, maxEv = 3)
         compose.setContent {
             LensqivoTheme {
+                maxPanelHeightPx = with(LocalDensity.current) { 240.dp.toPx() }
+                val session = remember { CameraSession(context).apply { resetCreative(); selectLook(Look.SOL) } }
+                DisposableEffect(session) { onDispose { session.close() } }
                 Box(Modifier.fillMaxSize().background(Color(0xFF101110))) {
                     CameraFrame(3f / 4f,
                         toolbar = { CameraToolbar(state, false, {}, {}, {}) },
@@ -212,22 +253,32 @@ class CameraControlsTest {
                                 Text("Sample · Sol", color = Color.White, modifier = Modifier.align(Alignment.TopStart)
                                     .padding(12.dp).background(Color.Black.copy(alpha = .65f)).padding(8.dp))
                             }
-                        }, creativePanel = if (tool == null) null else ({
-                            Column(Modifier.fillMaxWidth().background(Color(0xFF232422)).padding(16.dp)) {
-                                Text("Looks")
-                                Text("Sample · judge the look in your live view")
-                                LookSelector(Look.SOL, true) {}
-                                TextButton(onClick = { tool = null }) { Text("Close looks") }
-                            }
-                        }))
+                        }, creativePanel = if (tool == null) null else ({ CreativePanel(session, checkNotNull(tool), true) { tool = null } }))
                 }
             }
         }
         compose.waitForIdle()
+        val viewport = compose.onNodeWithTag("viewfinder").fetchSemanticsNode().boundsInRoot
+        val shutter = compose.onNodeWithContentDescription("Take photo").fetchSemanticsNode().boundsInRoot
         logScreenshot("camera")
         compose.onNodeWithText("Looks").performClick()
         compose.waitUntil(10_000) { compose.onAllNodesWithTag("look-sample-SOL", useUnmergedTree = true).fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithContentDescription("Look intensity").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Compare original").assertIsDisplayed()
+        val looksPanel = compose.onNodeWithTag("creative-panel").fetchSemanticsNode().boundsInRoot
+        assertTrue("Creative drawer must leave the scene visible", looksPanel.height <= viewport.height * .6f + 1f)
+        assertTrue("Creative drawer must stay within its compact height cap", looksPanel.height <= maxPanelHeightPx + 1f)
+        assertEquals("Opening looks must preserve viewport geometry", viewport, compose.onNodeWithTag("viewfinder").fetchSemanticsNode().boundsInRoot)
+        assertEquals("Opening looks must preserve shutter geometry", shutter, compose.onNodeWithContentDescription("Take photo").fetchSemanticsNode().boundsInRoot)
         logScreenshot("looks")
+        compose.onNodeWithContentDescription("Close looks").assertIsDisplayed().performClick()
+        compose.onNodeWithText("Beauty").performClick()
+        compose.onNodeWithContentDescription("Natural smooth").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Soft glow").assertIsDisplayed()
+        val beautyPanel = compose.onNodeWithTag("creative-panel").fetchSemanticsNode().boundsInRoot
+        assertTrue("Beauty drawer must leave the scene visible", beautyPanel.height <= viewport.height * .6f + 1f)
+        assertTrue("Beauty drawer must stay within its compact height cap", beautyPanel.height <= maxPanelHeightPx + 1f)
+        logScreenshot("beauty")
     }
 
     private fun logScreenshot(name: String) {

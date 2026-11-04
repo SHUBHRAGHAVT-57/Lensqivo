@@ -65,7 +65,9 @@ private val Panel = Color(0xFF232422)
 fun LensqivoTheme(content: @Composable () -> Unit) {
     MaterialTheme(colorScheme = darkColorScheme(primary = Champagne, onPrimary = Ink,
         background = Ink, onBackground = Paper, surface = Panel, onSurface = Paper,
-        secondary = Champagne, onSecondary = Ink), content = content)
+        secondary = Champagne, onSecondary = Ink)) {
+        CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onBackground, content = content)
+    }
 }
 
 @Composable
@@ -146,10 +148,12 @@ internal fun CameraFrame(ratio: Float, toolbar: @Composable () -> Unit,
         BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {
             val availableWidth = maxWidth
             val wide = availableWidth > maxHeight && availableWidth >= 480.dp
-            val panelHeight = maxHeight * .8f
+            val displayRatio = if (wide) 1f / ratio else ratio
             val previewContent: @Composable () -> Unit = {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Box(Modifier.aspectRatio(if (wide) 1f / ratio else ratio,
+                BoxWithConstraints(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    val viewportHeight = minOf(maxHeight, maxWidth / displayRatio)
+                    val panelHeight = minOf(viewportHeight * .56f, 240.dp)
+                    Box(Modifier.aspectRatio(displayRatio,
                         matchHeightConstraintsFirst = wide).background(Color.Black).testTag("viewfinder")) { preview() }
                     creativePanel?.let { panel ->
                         Box(Modifier.align(Alignment.BottomCenter).fillMaxWidth().heightIn(max = panelHeight)) { panel() }
@@ -292,25 +296,32 @@ private fun GalleryButton(saved: SavedMedia?, enabled: Boolean, action: () -> Un
 }
 
 @Composable
-private fun CreativePanel(session: CameraSession, tool: CreativeTool, editable: Boolean, close: () -> Unit) {
+internal fun CreativePanel(session: CameraSession, tool: CreativeTool, editable: Boolean, close: () -> Unit) {
     val state = session.state
-    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp))
+    Column(Modifier.fillMaxWidth().testTag("creative-panel").clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp))
         .background(Panel.copy(alpha = .98f)).verticalScroll(rememberScrollState()).padding(horizontal = 16.dp)
-        .padding(bottom = 12.dp).testTag("creative-panel")) {
+        .padding(bottom = 8.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text(tool.label, style = MaterialTheme.typography.titleMedium, modifier = Modifier.weight(1f))
+            Column(Modifier.weight(1f)) {
+                Text(tool.label, style = MaterialTheme.typography.titleMedium)
+                if (tool == CreativeTool.LOOKS) Text("Sample", style = MaterialTheme.typography.labelSmall, color = Muted)
+            }
+            if (tool != CreativeTool.ADJUST) TextButton(onClick = session::compare,
+                enabled = state.phase == Phase.IDLE && state.countdown == 0,
+                modifier = Modifier.heightIn(min = 48.dp).semantics {
+                    contentDescription = if (session.comparing) "Return to your look" else "Compare original"
+                    stateDescription = if (session.comparing) "Showing original, capture paused" else "Showing creative settings"
+                }) { Text(if (session.comparing) "After" else "Before") }
             CameraIconButton(Glyph.CLOSE, "Close ${tool.label.lowercase(Locale.ROOT)}", action = close)
         }
         when (tool) {
             CreativeTool.LOOKS -> {
-                Text("Sample · judge the look in your live view", style = MaterialTheme.typography.labelSmall, color = Muted)
                 LookOptions(session.look, editable, session.strength, session::selectLook)
-                Text(session.look.getDescription(), color = Muted, style = MaterialTheme.typography.bodySmall)
                 ValueSlider("Look intensity", session.strength, editable && session.look != Look.ORIGINAL,
                     session::changeStrength, session::persistStrength)
             }
             CreativeTool.BEAUTY -> {
-                Text("Skin-color selective. Similar-colored surfaces may also soften. Start with a light touch.",
+                Text("Skin-color selective; similar-colored surfaces may also soften.",
                     color = Muted, style = MaterialTheme.typography.bodySmall)
                 ValueSlider("Natural smooth", session.smooth, editable, session::changeSmooth, session::persistBeauty)
                 ValueSlider("Soft glow", session.glow, editable, session::changeGlow, session::persistBeauty)
@@ -330,10 +341,6 @@ private fun CreativePanel(session: CameraSession, tool: CreativeTool, editable: 
                 }
             }
         }
-        if (tool != CreativeTool.ADJUST) OutlinedButton(onClick = session::compare, enabled = state.phase == Phase.IDLE && state.countdown == 0,
-            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).semantics {
-                stateDescription = if (session.comparing) "Showing original, capture paused" else "Showing creative settings"
-            }) { Text(if (session.comparing) "Return to your look" else "Compare original") }
     }
 }
 
@@ -466,18 +473,19 @@ private fun LookOptions(selected: Look, enabled: Boolean, strength: Float, onSel
             } finally { source.recycle() }
         }
     }
-    LazyRow(Modifier.fillMaxWidth().padding(vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+    LazyRow(Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         items(Look.values(), key = { it.name }) { look ->
-            Column(Modifier.width(78.dp).clip(RoundedCornerShape(10.dp))
+            Column(Modifier.width(68.dp).clip(RoundedCornerShape(10.dp))
                 .border(1.dp, if (look == selected) Champagne else Color.Transparent, RoundedCornerShape(10.dp))
-                .selectable(look == selected, enabled, Role.RadioButton) { onSelect(look) }.padding(4.dp),
+                .selectable(look == selected, enabled, Role.RadioButton) { onSelect(look) }
+                .semantics { contentDescription = "${look.getLabel()}. ${look.getDescription()}" }.padding(4.dp),
                 horizontalAlignment = Alignment.CenterHorizontally) {
                 val bitmap = samples[look]
                 if (bitmap != null) Image(bitmap.asImageBitmap(), null,
-                    Modifier.fillMaxWidth().height(92.dp).clip(RoundedCornerShape(6.dp)).testTag("look-sample-${look.name}"), contentScale = ContentScale.Crop)
-                else Box(Modifier.fillMaxWidth().height(92.dp).background(Panel))
+                    Modifier.fillMaxWidth().height(64.dp).clip(RoundedCornerShape(6.dp)).testTag("look-sample-${look.name}"), contentScale = ContentScale.Crop)
+                else Box(Modifier.fillMaxWidth().height(64.dp).background(Panel))
                 Text(look.getLabel(), color = if (look == selected) Champagne else Paper,
-                    style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(vertical = 7.dp))
+                    style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(vertical = 4.dp))
             }
         }
     }

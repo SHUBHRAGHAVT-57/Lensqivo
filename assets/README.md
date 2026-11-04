@@ -1,5 +1,9 @@
 # Lensqivo artwork
 
+The in-app `app/src/main/assets/samples/look-reference.jpg` is a separate AI-generated, original reference still life (peaches, ivory cup, blue cloth and window light), created with the built-in image-generation tool on 4 November 2026. Its 240 × 320 JPEG is used only to illustrate actual color transforms in sample thumbnails. It contains no user photography and is not evidence of Lensqivo camera quality.
+
+Reference-image prompt: "Create a single original photorealistic reference photograph for tiny camera color-look thumbnails in Lensqivo. Portrait 3:4 composition. Sunlit still life: three ripe peaches with one green leaf, an ivory ceramic cup, small deep blue cloth on a warm pale stone table by a window. Natural neutral sRGB-style photographic color, broad soft window light, gentle real shadows and subtle texture. Focus sharp on peaches and cup, background quiet and light gray. Include warm skin-like peach tones, blue, green, neutral ivory, no writing no logo no border no collage. This is a sample image for users to compare color filters, not an app screenshot or claim about camera performance. No people."
+
 `lensqivo-cover.jpg` is original AI-generated brand artwork created for this repository with the built-in image-generation tool on 4 November 2026. It is not an in-app screenshot, a camera sample, or evidence that the implemented looks reproduce its rendering.
 
 The generated original is retained locally. The repository copy is a JPEG export at the original 1983 × 793 dimensions, quality 88, approximately 346 KiB, inspected after export for readable text and composition. No third-party camera logos, film-stock assets or device mockups are included.

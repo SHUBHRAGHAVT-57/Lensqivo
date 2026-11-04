@@ -2,6 +2,16 @@
 
 Research checked 4 November 2026. Competitor descriptions below are vendor documentation, not independent performance tests. The decision is to build an approachable creative camera, rather than start with a full cinema recorder.
 
+## Premium capture iteration
+
+The interaction research favors a substantial viewfinder, compact actionable controls and optional creative drawers. [Blackmagic Camera](https://www.blackmagicdesign.com/products/blackmagiccamera) demonstrates contextual monitoring; [ProShot](https://www.riseupgames.com/proshot) emphasizes useful camera controls and manufacturer capability limits. Neither page establishes performance parity on unspecified hardware. [SODA's Android listing](https://play.google.com/store/apps/details?id=com.snowcorp.soda.android) and [B612](https://b612.snow.me/) establish real-time beauty as a product category, not independent quality evidence. [VSCO Recipes](https://www.vsco.co/features/recipes) supports the value of repeatable creative settings; Lensqivo adds three local reusable slots rather than copying proprietary presets or assets.
+
+Native still quality takes precedence over a universal shared-stream snapshot path. AndroidX's [StreamSharing source](https://github.com/androidx/androidx/blob/androidx-main/camera/camera-core/src/main/java/androidx/camera/core/streamsharing/StreamSharing.java) routes its ImageCapture to a shared-stream JPEG snapshot. Lensqivo now targets preview alone in photo mode and applies edits after native capture. This source explanation is from current AndroidX, not decompilation of the pinned CameraX binary. [ImageCapture configuration](https://developer.android.com/reference/androidx/camera/core/ImageCapture.Builder) documents resolution/capture choices; no guaranteed pixel count or vendor-stock quality is claimed.
+
+The [pinned Media3 1.11.1 GlEffect contract](https://github.com/androidx/media/blob/1.11.1/libraries/effect/src/main/java/androidx/media3/effect/GlEffect.java) specifies linear BT.709 for SDR. A shared custom shader performs edge-aware skin-color-selective softening, gentle glow and original color matrices. JPEG tiles decode/encode sRGB around this linear working space. The shader does not detect faces. [MediaPipe Face Landmarker](https://developers.google.com/edge/mediapipe/solutions/vision/face_landmarker/android) could support a future localized mask, but adds a model, tracking and integration costs; it is not a ready-made beauty renderer.
+
+[CameraX Extensions](https://developer.android.com/media/camera/camerax/extensions-api) are per-camera vendor capabilities. HDR/Night remain deferred until a native extension capture path is qualified; ordinary SDR capture is not relabeled HDR. ExifInterface [1.4.2 release guidance](https://developer.android.com/jetpack/androidx/releases/exifinterface) informs the metadata dependency. New settings expose only implemented flash, timer, mirroring, original preservation, grid, audio and reusable recipes.
+
 ## What informed the direction
 
 | Evidence | What it supports | Lensqivo decision |

@@ -8,7 +8,20 @@ public final class CoreTests {
         stopBeforeStart();
         staleCallbacks();
         colorTransforms();
+        expandedLooks();
         System.out.println("PASS: " + assertions + " core assertions");
+    }
+
+    private static void expandedLooks() {
+        check(Look.values().length >= 8, "eight considered color looks");
+        for (String name : new String[]{"COVE", "EMBER", "PETAL", "FADE"}) {
+            Look look = Look.valueOf(name);
+            float[] a = look.matrix(.8f);
+            float[] b = Look.ORIGINAL.matrix(.8f);
+            boolean different = false;
+            for (int i = 0; i < a.length; i++) different |= Math.abs(a[i] - b[i]) > .00001f;
+            check(different, name + " is a real color transform");
+        }
     }
 
     private static void captureTransactions() {

@@ -20,9 +20,9 @@
   <a href="#development-status">Development status</a>
 </p>
 
-> **Development build · v0.1.0**
+> **Development build · v0.2.0**
 >
-> CI passes the core assertions, debug app build, strict Android lint and instrumented-test APK compilation. [Get the development build from GitHub Actions](https://github.com/SHUBHRAGHAVT-57/Lensqivo/actions/runs/41839194868). Real camera capture, GPU rendering and device UI validation remain pending; this is not a production-qualified release. The cover is AI-generated brand artwork, **not** an app screenshot or a photograph captured with Lensqivo.
+> This iteration introduces native still capture, natural beauty controls and a camera-first interface. [Get the latest successful development build from GitHub Actions](https://github.com/SHUBHRAGHAVT-57/Lensqivo/actions/workflows/android.yml). Check its validation result before installing. Real-camera quality and cross-device performance require physical-device qualification; this is not a production release. The cover is AI-generated brand artwork, **not** an app screenshot or a photograph captured with Lensqivo.
 
 ## A name with a point of view
 
@@ -40,21 +40,29 @@ The following features are **implemented in source**. Device qualification is tr
 
 | Capture | Color | Control |
 | :--- | :--- | :--- |
-| JPEG photos through CameraX | Four original live looks | Tap-to-meter |
+| Native still JPEGs through CameraX | Eight original live looks | Tap-to-meter |
 | MP4 video through CameraX Recorder | Adjustable look intensity | Capability-dependent zoom and exposure |
-| Supported FHD → HD → SD selection | Original / processed comparison | Front / rear camera switching |
-| Optional microphone audio | Shared preview / output color transform | Composition grid and local preferences |
-| Explicit recording and saving states | Original-only effect recovery | System photo picker and last-capture opening |
+| Supported FHD → HD → SD selection | Original comparison with capture guard | Front / rear camera switching |
+| Optional microphone audio | Skin-color-selective smoothness and soft glow | Composition grid, flash and 3/10-second timer |
+| Private interrupted-photo recovery | Three reusable offline recipe slots | Saved-selfie mirroring and optional original copies |
 
-The shutter stays outside the scrolling adjustments. Settings open in a sheet, and a recording remains owned until CameraX reports finalization. Sound interruptions are surfaced instead of treating microphone permission as proof of recorded audio.
+The viewfinder leads. A stable shutter dock and compact toolbar keep the camera ready; Looks, Beauty and Adjust open only when needed. Settings group photo, video, composition, creative defaults and saving. A recording remains owned until CameraX reports finalization. Sound interruptions are surfaced instead of treating microphone permission as proof of recorded audio.
 
-### Four looks, room to make them yours
+### Eight looks, room to make them yours
 
 | Original | Sol | Dusk | Silver |
 | :--- | :--- | :--- | :--- |
 | True to the light | Warm light, soft color | Cool air, quiet color | Light and shadow |
 
+| Cove | Ember | Petal | Fade |
+| :--- | :--- | :--- | :--- |
+| Clear blues, softened greens | Golden warmth, deeper color | Gentle rose, airy shadows | Muted color, lifted blacks |
+
 These are original creative color transforms. They do not claim to reproduce a proprietary film stock. Grain, halation and advanced tone curves are research directions, not existing features. Shared rendering is designed to reduce preview/export differences; actual color, framing and output resolution still need chart-based device tests.
+
+**Natural beauty, deliberately restrained.** Smoothness uses a feathered skin-color selector and edge-aware neighboring samples. Soft glow adds a gentle highlight treatment. Both default off. This is not face detection: similarly colored walls or clothing can also be affected. There is no automatic whitening, facial reshaping or claim to erase blemishes.
+
+**A proper still-photo path.** Photos use CameraX's native still stream, separate from live-preview effects. Edited JPEGs retain captured pixel dimensions through a tiled GPU export on a worker. The same SDR shader supplies preview/video and photo color, with explicit sRGB conversion for JPEGs. Native originals are retained until publication succeeds. If memory or the GPU cannot complete an edit at full resolution, Lensqivo saves the original and explains the failure; it never silently shrinks the image. Optional original copies cost additional storage. This does not promise vendor-stock HDR/Night processing or exact preview/ISP equality.
 
 ## Local capture, fewer permissions
 
@@ -105,7 +113,7 @@ With Java 17+ and Node.js 20+:
 node scripts/test-core.mjs
 ~~~
 
-The current suite passes **421 assertions** covering capture ownership, repeated taps, stop-before-start, finalization, stale callbacks and color-transform behavior. This assertion count is not a claim of 421 independent test scenarios.
+The current suite passes **814 assertions** covering capture ownership, repeated taps, stop-before-start, finalization, stale callbacks and color-transform behavior. This assertion count is not a claim of 814 independent test scenarios.
 
 On an isolated Android test device or emulator, run the instrumented UI/recovery tests with:
 
@@ -120,13 +128,16 @@ app/                 Kotlin / Compose application
   CameraSession      CameraX resources, capabilities, capture and finalization
   CameraScreen       Viewfinder, creative controls, settings and semantics
   MainActivity       Permissions, ViewModel ownership, picker and media opening
+  PhotoStore         Pending-media transactions and native-original recovery
+  CreativeEffect     Shared SDR shader and natural beauty effect
+  PhotoRenderer      Tiled native-resolution still export
 core/                Java capture-state gate and original color math
 scripts/             Dependency-free core test launcher
 assets/              Original repository artwork and provenance
 docs/                Product decisions, research and validation requirements
 ~~~
 
-CameraX owns the camera and recording pipeline. Media3 supplies the shared GPU color-effect path. The app does not implement its own MediaCodec/MediaMuxer recorder or full-resolution bitmap readback renderer.
+CameraX owns the camera and recording pipeline; the app does not implement its own MediaCodec/MediaMuxer recorder. Media3 supplies live GPU effects. Native stills are region-decoded and processed with that same shader, with one full output bitmap plus bounded overlapping tiles. Export checks available heap and texture limits. A 12 MP output bitmap alone is about 45.8 MiB; capture and GPU resources require additional memory.
 
 The CameraX Media3 adapter is currently **`1.0.0-alpha04`**. Its integration is isolated in `CameraSession`; compatibility, memory use and image quality require real-device validation. See the [research and technical decisions](docs/research.md) for sources and trade-offs.
 
@@ -134,14 +145,14 @@ The CameraX Media3 adapter is currently **`1.0.0-alpha04`**. Its integration is 
 
 | Gate | Current evidence |
 | :--- | :--- |
-| Core behavior | 421 assertions executed successfully locally and in CI |
+| Core behavior | 814 assertions executed successfully locally; current CI result linked below |
 | Manifest and resource XML | Parsed successfully |
 | Source formatting checks | `git diff --check` passed before publication |
-| Android build and lint | [Passed in CI at ed85c25](https://github.com/SHUBHRAGHAVT-57/Lensqivo/actions/runs/41839194868) |
-| Instrumented tests | Test APK compiles; tests have not been executed on a device |
+| Android build and lint | [Current workflow results](https://github.com/SHUBHRAGHAVT-57/Lensqivo/actions/workflows/android.yml); previous v0.1 source passed |
+| Instrumented tests | CI configured to execute native Compose, GPU export, preferences and MediaStore regression tests on an isolated emulator |
 | Real photo/video, GPU parity and accessibility | Device qualification pending |
 
-The [Android quality workflow](https://github.com/SHUBHRAGHAVT-57/Lensqivo/actions/workflows/android.yml) validates the wrapper, runs the core gate, builds the debug app, runs Android lint and compiles the instrumented tests. It does **not** run a camera or execute device tests. Check the actual workflow result before relying on an artifact.
+The [Android quality workflow](https://github.com/SHUBHRAGHAVT-57/Lensqivo/actions/workflows/android.yml) validates the wrapper, runs the core gate, builds the debug app, runs strict Android lint, compiles the instrumented tests and executes them on an isolated emulator. Synthetic scenes test UI and export correctness; these do not validate a physical camera or certify thermal performance. Check the actual workflow result before relying on an artifact.
 
 ### What comes next
 
@@ -154,7 +165,7 @@ RAW video, Log/HDR, LUT import, manual sensor controls, cloud sync and subscript
 
 ## Contributing and ownership
 
-Issues with a device model, Android version, exact reproduction steps and expected/actual behavior are useful. Avoid sharing personal photos, private media links or signing material in bug reports.
+Bug reports with reproduction steps and expected/actual behavior are useful. Hardware details are optional; share them privately if preferred. Do not include personal photos, private media links or signing material in public reports.
 
 Lensqivo is an independent implementation. No FilterCam source, presets, shaders, branding or artwork were copied. Gradle wrapper files and AndroidX dependencies retain their upstream licenses. No license grant for Lensqivo's original source has been selected yet; public visibility alone does not grant permission to reuse it. Cover provenance is documented [here](assets/README.md).
 

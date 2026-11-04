@@ -6,6 +6,8 @@ import android.content.ContentValues
 import android.content.Context
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Handler
+import android.os.Looper
 import android.provider.MediaStore
 import android.view.Surface
 import androidx.camera.core.Camera
@@ -39,11 +41,11 @@ import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.media3.common.util.UnstableApi
-import androidx.media3.effect.RgbMatrix
 import com.shubhraghav.lensqivo.core.CaptureGate
 import com.shubhraghav.lensqivo.core.CaptureGate.Phase
 import com.shubhraghav.lensqivo.core.Look
 import java.util.UUID
+import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 
@@ -69,13 +71,21 @@ data class CameraUiState(
     val saved: SavedMedia? = null,
     val originalOnly: Boolean = false,
     val audioInterrupted: Boolean = false,
+    val hasFlash: Boolean = false,
+    val flash: Int = ImageCapture.FLASH_MODE_OFF,
+    val countdown: Int = 0,
+    val timer: Int = 0,
+    val mirror: Boolean = true,
+    val keepOriginal: Boolean = true,
+    val recovering: Boolean = false,
 )
 
 /** Main-thread-owned CameraX session. Recording ownership ends only at Finalize. */
 @androidx.annotation.OptIn(UnstableApi::class)
 class CameraSession(private val context: Context) : AutoCloseable {
     val preferences = Preferences(context)
-    var state by mutableStateOf(CameraUiState())
+    var state by mutableStateOf(CameraUiState(timer = preferences.timer,
+        mirror = preferences.mirror, keepOriginal = preferences.keepOriginal))
         private set
     var look by mutableStateOf(preferences.look)
         private set
@@ -83,11 +93,19 @@ class CameraSession(private val context: Context) : AutoCloseable {
         private set
     var comparing by mutableStateOf(false)
         private set
+    var smooth by mutableFloatStateOf(preferences.smooth)
+        private set
+    var glow by mutableFloatStateOf(preferences.glow)
+        private set
     private val gate = CaptureGate()
     private val executor = ContextCompat.getMainExecutor(context)
-    private val matrix = AtomicReference(look.matrix(strength))
-    internal val renderMatrix: FloatArray get() = matrix.get()
-    private val color = RgbMatrix { _, _ -> renderMatrix }
+    private val render = AtomicReference(RenderRecipe(look, strength, smooth, glow))
+    internal val renderMatrix: FloatArray get() = render.get().let { it.look.matrix(it.strength) }
+    private val color = CreativeEffect { render.get() }
+    private val worker = Executors.newSingleThreadExecutor { task -> Thread(task, "lensqivo-photo") }
+    private val photos = PhotoStore(context)
+    private val timerHandler = Handler(Looper.getMainLooper())
+    private var countdownId = 0L
     private var provider: ProcessCameraProvider? = null
     private var camera: Camera? = null
     private var owner: LifecycleOwner? = null
@@ -108,7 +126,7 @@ class CameraSession(private val context: Context) : AutoCloseable {
         }
     }
 
-    init { loadProvider() }
+    init { loadProvider(); recoverPhotos() }
 
     private fun loadProvider() {
         if (loadingProvider || closed) return
@@ -155,7 +173,7 @@ class CameraSession(private val context: Context) : AutoCloseable {
         if (!gate.isIdle() || closed) return
         state = state.copy(originalOnly = originalOnly, error = null)
         comparing = false
-        if (originalOnly) matrix.set(Look.ORIGINAL.matrix(0f)) else updateMatrix()
+        updateMatrix()
         if (provider == null) loadProvider() else bind()
     }
 
@@ -190,7 +208,7 @@ class CameraSession(private val context: Context) : AutoCloseable {
                 photo = ImageCapture.Builder()
                     .setTargetRotation(rotation)
                     .setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY)
-                    .setJpegQuality(95).build()
+                    .setJpegQuality(97).setFlashMode(preferences.flash).build()
                 builder.addUseCase(requireNotNull(photo))
                 useCases = listOf(preview, requireNotNull(photo))
             } else {
@@ -205,7 +223,8 @@ class CameraSession(private val context: Context) : AutoCloseable {
             }
             if (!state.originalOnly) {
                 effect = Media3Effect(context,
-                    CameraEffect.PREVIEW or CameraEffect.VIDEO_CAPTURE or CameraEffect.IMAGE_CAPTURE,
+                    if (state.mode == CaptureMode.PHOTO) CameraEffect.PREVIEW
+                    else CameraEffect.PREVIEW or CameraEffect.VIDEO_CAPTURE,
                     executor) {
                     if (!closed && generation == token) {
                         state = state.copy(ready = false,
@@ -219,8 +238,11 @@ class CameraSession(private val context: Context) : AutoCloseable {
             val active = requireNotNull(camera)
             val zoom = active.cameraInfo.zoomState.value
             val exposure = active.cameraInfo.exposureState
+            val hasFlash = active.cameraInfo.hasFlashUnit()
+            photo?.flashMode = if (hasFlash) preferences.flash else ImageCapture.FLASH_MODE_OFF
             val resolution = photo?.resolutionInfo?.resolution ?: video?.resolutionInfo?.resolution
             state = state.copy(front = useFront, canFlip = rear && front,
+                hasFlash = hasFlash, flash = photo?.flashMode ?: ImageCapture.FLASH_MODE_OFF,
                 minZoom = zoom?.minZoomRatio ?: 1f, maxZoom = zoom?.maxZoomRatio ?: 1f,
                 zoom = zoom?.zoomRatio ?: 1f,
                 minEv = exposure.exposureCompensationRange.lower,
@@ -275,7 +297,69 @@ class CameraSession(private val context: Context) : AutoCloseable {
         comparing = !comparing
         updateMatrix()
     }
-    private fun updateMatrix() { matrix.set(if (comparing) Look.ORIGINAL.matrix(0f) else look.matrix(strength)) }
+    private fun updateMatrix() {
+        render.set(if (comparing || state.originalOnly) RenderRecipe() else RenderRecipe(look, strength, smooth, glow))
+    }
+
+    fun changeSmooth(value: Float) {
+        if (!gate.isIdle() || state.originalOnly || !value.isFinite()) return
+        smooth = value.coerceIn(0f, 1f); comparing = false; updateMatrix()
+    }
+    fun changeGlow(value: Float) {
+        if (!gate.isIdle() || state.originalOnly || !value.isFinite()) return
+        glow = value.coerceIn(0f, 1f); comparing = false; updateMatrix()
+    }
+    fun persistBeauty() { preferences.smooth = smooth; preferences.glow = glow }
+    fun setFlash(value: Int) {
+        if (!gate.isIdle() || !state.hasFlash || state.mode != CaptureMode.PHOTO || value !in 0..2) return
+        preferences.flash = value; photo?.flashMode = value; state = state.copy(flash = value)
+    }
+    fun setTimer(value: Int) {
+        if (!gate.isIdle() || value !in listOf(0, 3, 10)) return
+        preferences.timer = value; state = state.copy(timer = value)
+    }
+    fun setMirror(value: Boolean) {
+        if (!gate.isIdle()) return
+        preferences.mirror = value; state = state.copy(mirror = value)
+    }
+    fun setKeepOriginal(value: Boolean) {
+        if (!gate.isIdle()) return
+        preferences.keepOriginal = value; state = state.copy(keepOriginal = value)
+    }
+    fun saveRecipe(slot: Int) {
+        if (!gate.isIdle() || state.originalOnly) return
+        preferences.saveRecipe(slot, look, strength, smooth, glow)
+        state = state.copy(notice = "Recipe $slot saved on this phone.")
+    }
+    fun loadRecipe(slot: Int) {
+        if (!gate.isIdle() || state.originalOnly) return
+        val recipe = preferences.recipe(slot) ?: return
+        look = recipe.look; strength = recipe.strength; smooth = recipe.smooth; glow = recipe.glow
+        preferences.look = look; persistStrength(); persistBeauty(); comparing = false; updateMatrix()
+    }
+    fun resetCreative() {
+        if (!gate.isIdle()) return
+        look = Look.ORIGINAL; strength = .7f; smooth = 0f; glow = 0f; comparing = false
+        preferences.look = look; persistStrength(); persistBeauty(); updateMatrix()
+    }
+
+    fun recoverPhotos() {
+        if (!gate.isIdle() || state.recovering || closed) return
+        state = state.copy(recovering = true)
+        worker.execute {
+            val result = runCatching { photos.recover() }
+            val latest = runCatching { photos.latest() }.getOrNull()
+            executor.execute {
+                if (!closed) state = state.copy(recovering = false,
+                    saved = result.getOrNull()?.lastOrNull()?.media ?: state.saved ?: latest,
+                    notice = when {
+                        result.isFailure -> "Unsaved originals remain private. Free storage, then retry recovery in Settings."
+                        result.getOrThrow().isNotEmpty() -> "${result.getOrThrow().size} interrupted photo(s) recovered as originals."
+                        else -> state.notice
+                    })
+            }
+        }
+    }
 
     fun zoom(value: Float) {
         val active = camera ?: return
@@ -312,7 +396,7 @@ class CameraSession(private val context: Context) : AutoCloseable {
 
     fun capture(audio: Boolean) {
         if (gate.getPhase() == Phase.STARTING || gate.getPhase() == Phase.RECORDING) { stop(); return }
-        if (closed || !state.ready || !gate.isIdle()) return
+        if (closed || !state.ready || !gate.isIdle() || comparing) return
         if (state.mode == CaptureMode.PHOTO) takePhoto() else startVideo(audio)
     }
 
@@ -327,18 +411,58 @@ class CameraSession(private val context: Context) : AutoCloseable {
         val id = gate.beginPhoto()
         if (id == 0L) return
         syncPhase()
-        val options = ImageCapture.OutputFileOptions.Builder(context.contentResolver,
-            MediaStore.Images.Media.EXTERNAL_CONTENT_URI, mediaValues("image/jpeg", "DCIM/Lensqivo", "jpg"))
-            .setMetadata(ImageCapture.Metadata().apply { isReversedHorizontal = state.front }).build()
-        try {
-            capture.takePicture(options, executor, object : ImageCapture.OnImageSavedCallback {
-                override fun onImageSaved(result: ImageCapture.OutputFileResults) {
-                    finish(id, result.savedUri?.let { SavedMedia(it, "image/jpeg") },
-                        if (result.savedUri == null) "Photo saved, but Android returned no media link." else "Photo saved to DCIM/Lensqivo.")
+        val recipe = render.get()
+        val mirror = state.front && state.mirror
+        val keepOriginal = state.keepOriginal
+        fun shoot() = performPhoto(id, capture, recipe, mirror, keepOriginal)
+        if (state.timer == 0) shoot() else {
+            countdownId = id
+            state = state.copy(countdown = state.timer)
+            val tick = object : Runnable {
+                override fun run() {
+                    if (countdownId != id || closed) return
+                    state = state.copy(countdown = state.countdown - 1)
+                    if (state.countdown == 0) { countdownId = 0L; shoot() }
+                    else timerHandler.postDelayed(this, 1_000)
                 }
-                override fun onError(exception: ImageCaptureException) { finish(id, null, "Photo could not be saved. Check storage and retry.") }
-            })
-        } catch (_: Exception) { finish(id, null, "Photo could not start. Check camera access and storage.") }
+            }
+            timerHandler.postDelayed(tick, 1_000)
+        }
+    }
+
+    private fun performPhoto(id: Long, capture: ImageCapture, recipe: RenderRecipe, mirror: Boolean, keepOriginal: Boolean) {
+        worker.execute {
+            val input = runCatching { photos.newInput() }.getOrNull()
+            executor.execute shutter@{
+                if (input == null) { finish(id, null, "Capture storage unavailable. Free space and retry."); return@shutter }
+                if (closed || owner?.lifecycle?.currentState?.isAtLeast(Lifecycle.State.STARTED) != true || capture !== photo) {
+                    finish(id, null, "Capture cancelled before the shutter opened."); return@shutter
+                }
+                val options = ImageCapture.OutputFileOptions.Builder(input)
+                    .setMetadata(ImageCapture.Metadata().apply { isReversedHorizontal = mirror }).build()
+                try {
+                    capture.takePicture(options, executor, object : ImageCapture.OnImageSavedCallback {
+                        override fun onImageSaved(result: ImageCapture.OutputFileResults) {
+                            worker.execute {
+                                val saved = runCatching { photos.export(input, recipe, keepOriginal) }
+                                executor.execute {
+                                    val value = saved.getOrNull()
+                                    finish(id, value?.media, value?.message
+                                        ?: "Photo remains private after a save failure. Free storage, then recover the original in Settings.")
+                                }
+                            }
+                        }
+                        override fun onError(exception: ImageCaptureException) {
+                            worker.execute { if (runCatching { photos.requireCompleteJpeg(input) }.isFailure) input.delete() }
+                            finish(id, null, "Photo could not be captured. Check storage and camera access, then retry.")
+                        }
+                    })
+                } catch (_: Exception) {
+                    worker.execute { if (runCatching { photos.requireCompleteJpeg(input) }.isFailure) input.delete() }
+                    finish(id, null, "Photo could not start. Check camera access and storage.")
+                }
+            }
+        }
     }
 
     @SuppressLint("MissingPermission")
@@ -394,6 +518,12 @@ class CameraSession(private val context: Context) : AutoCloseable {
     }
 
     fun stop() {
+        if (countdownId != 0L) {
+            val id = countdownId; countdownId = 0L
+            timerHandler.removeCallbacksAndMessages(null)
+            state = state.copy(countdown = 0)
+            finish(id, null, "Self-timer cancelled.")
+        }
         if (gate.requestStop()) {
             syncPhase()
             recording?.stop()
@@ -405,6 +535,7 @@ class CameraSession(private val context: Context) : AutoCloseable {
         if (!gate.complete(id)) return
         state = state.copy(phase = gate.getPhase(), seconds = 0, saved = saved ?: state.saved, notice = message)
         if (closed || owner == null) releaseBinding() else if (needsBind) bind()
+        if (closed) worker.shutdown()
     }
     fun clearNotice() { state = state.copy(notice = null) }
 
@@ -436,5 +567,6 @@ class CameraSession(private val context: Context) : AutoCloseable {
         owner = null
         view = null
         if (gate.isIdle()) releaseBinding()
+        if (gate.isIdle()) worker.shutdown()
     }
 }

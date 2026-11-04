@@ -5,7 +5,11 @@ public enum Look {
     ORIGINAL("Original", "True to the light", 1f, 1f, 1f, 1f, 0f),
     SOL("Sol", "Warm light, soft color", .91f, 1.05f, 1f, .91f, .008f),
     DUSK("Dusk", "Cool air, quiet color", .78f, .94f, 1.01f, 1.06f, .009f),
-    SILVER("Silver", "Light and shadow", 0f, 1f, 1f, 1f, .006f);
+    SILVER("Silver", "Light and shadow", 0f, 1f, 1f, 1f, .006f),
+    COVE("Cove", "Clear blues, softened greens", .88f, .97f, 1.01f, 1.04f, .003f),
+    EMBER("Ember", "Golden warmth, deeper color", 1.06f, 1.08f, 1.01f, .94f, .001f),
+    PETAL("Petal", "Gentle rose, airy shadows", .88f, 1.035f, .99f, 1.02f, .012f),
+    FADE("Fade", "Muted color, lifted blacks", .76f, 1.01f, 1f, .98f, .018f);
 
     private final String label;
     private final String description;

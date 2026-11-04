@@ -11,6 +11,7 @@ import android.opengl.EGLContext
 import android.opengl.EGLSurface
 import android.opengl.GLES20
 import android.os.Looper
+import androidx.core.graphics.createBitmap
 import androidx.exifinterface.media.ExifInterface
 import androidx.media3.common.util.GlUtil
 import androidx.media3.common.util.UnstableApi
@@ -70,7 +71,7 @@ object PhotoRenderer {
         check(required <= available) { "Not enough memory for native-size photo export" }
         // shortcut: Android's JPEG compressor needs one full output bitmap; use a streaming native
         // encoder if qualified devices must process photos exceeding this explicit heap budget.
-        val destination = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val destination = createBitmap(width, height, Bitmap.Config.ARGB_8888)
         try {
             renderTiles(context, input, destination, recipe)
             FileOutputStream(output).use {

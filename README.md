@@ -105,6 +105,8 @@ bash gradlew :core:check :app:assembleDebug :app:lintDebug :app:assembleDebugAnd
 
 After a successful build, the development APK is written to `app/build/outputs/apk/debug/app-debug.apk`. Its debug signature is for development; it is not a production release.
 
+CI debug signing can change between runs. If Android rejects an update because its signature differs, save anything you need and recover any pending originals before uninstalling the earlier development build. Uninstalling removes app-private settings and pending files. Production updates require a controlled release signing key.
+
 ### Core tests without an Android SDK
 
 With Java 17+ and Node.js 20+:

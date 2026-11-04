@@ -45,6 +45,7 @@ jobs:
           disable-animations: true
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -camera-back none -camera-front none
           script: |
+            adb logcat -G 16M
             bash gradlew :app:connectedDebugAndroidTest --no-daemon
             adb logcat -d -s LensqivoScreenshot:I '*:S'
       - name: Upload development APK and validation reports

@@ -5,7 +5,6 @@ import android.app.Application
 import android.content.ClipData
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
 import android.widget.Toast
@@ -22,6 +21,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -67,7 +67,7 @@ class MainActivity : ComponentActivity() {
                 if (!cameraAllowed) {
                     CameraPermissionScreen(
                         request = { cameraPermission.launch(Manifest.permission.CAMERA) },
-                        settings = { startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName"))) })
+                        settings = { startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, "package:$packageName".toUri())) })
                 } else {
                     CameraScreen(session, this, audioEnabled,
                         setAudio = { enabled ->

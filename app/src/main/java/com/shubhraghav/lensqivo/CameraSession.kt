@@ -32,6 +32,7 @@ import androidx.camera.video.VideoRecordEvent
 import androidx.camera.view.PreviewView
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.DefaultLifecycleObserver
@@ -78,7 +79,7 @@ class CameraSession(private val context: Context) : AutoCloseable {
         private set
     var look by mutableStateOf(preferences.look)
         private set
-    var strength by mutableStateOf(preferences.strength)
+    var strength by mutableFloatStateOf(preferences.strength)
         private set
     var comparing by mutableStateOf(false)
         private set

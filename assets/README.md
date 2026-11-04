@@ -1,0 +1,9 @@
+# Lensqivo artwork
+
+`lensqivo-cover.jpg` is original AI-generated brand artwork created for this repository with the built-in image-generation tool on 4 November 2026. It is not an in-app screenshot, a camera sample, or evidence that the implemented looks reproduce its rendering.
+
+The generated original is retained locally. The repository copy is a JPEG export at the original 1983 × 793 dimensions, quality 88, approximately 346 KiB, inspected after export for readable text and composition. No third-party camera logos, film-stock assets or device mockups are included.
+
+## Generation prompt
+
+Create an original wide editorial cover image for the public GitHub README of Lensqivo, an Android camera app for considered live color and everyday photography. Aspect ratio 2.5:1, landscape, high resolution. Art direction: premium independent photography publication, tactile rather than glossy tech. Deep near-black olive charcoal left third with ample breathing room and crisp elegant warm-ivory serif wordmark spelled EXACTLY 'Lensqivo' in large readable letters, and underneath only the small text 'LIGHT. COLOR. FEELING.' in spaced sans-serif. Right two thirds: a beautiful original photographic composition of sunlit pale stucco architecture, an arched doorway, olive tree shadows, warm late-afternoon amber light. Three subtly separated vertical photographic panels interpret the same scene in warm amber, restrained cool dusk, and silver monochrome. Clean geometry, photographic realism, natural texture, restrained fine grain, warm-paper palette, slight print texture. The typography must remain clearly readable when this cover is scaled down on GitHub. No device mockups, no app UI screenshots, no fake product screenshots, no camera hardware branding, no copyrighted film logos, no feature lists, no people, no watermarks. This is brand artwork, not evidence of camera output.

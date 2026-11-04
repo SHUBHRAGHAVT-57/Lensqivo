@@ -127,17 +127,19 @@ fun CameraScreen(session: CameraSession, owner: LifecycleOwner, audio: Boolean,
                 TextButton(onClick = { settings = true }, enabled = idle, modifier = Modifier.heightIn(min = 48.dp)) { Text("Settings") }
             }
             BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {
-                val wide = maxWidth >= 600.dp && maxWidth > maxHeight
+                val availableWidth = maxWidth
+                val availableHeight = maxHeight
+                val wide = availableWidth >= 600.dp && availableWidth > availableHeight
                 if (wide) {
                     Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
                         Viewfinder(session, owner, grid, true, Modifier.weight(1f).fillMaxHeight())
-                        Controls(session, audio, openSaved, openLibrary, Modifier.width((maxWidth * .38f).coerceIn(260.dp, 380.dp)).fillMaxHeight())
+                        Controls(session, audio, openSaved, openLibrary, Modifier.width((availableWidth * .38f).coerceIn(260.dp, 380.dp)).fillMaxHeight())
                     }
                 } else {
                     Column(Modifier.fillMaxSize()) {
                         Viewfinder(session, owner, grid, false, Modifier.weight(1f).fillMaxWidth())
                         Controls(session, audio, openSaved, openLibrary,
-                            Modifier.fillMaxWidth().heightIn(max = maxHeight * .56f))
+                            Modifier.fillMaxWidth().heightIn(max = availableHeight * .56f))
                     }
                 }
             }

@@ -22,7 +22,7 @@
 
 > **Development build · v0.2.0**
 >
-> Native still capture, natural beauty controls and a camera-first interface. [Download the verified development build](https://github.com/SHUBHRAGHAVT-57/Lensqivo/actions/runs/41894821675/artifacts/13355836022). Debug compilation, strict lint, 814 core assertions and 31 native tests on each of two emulator OS versions pass in [CI](https://github.com/SHUBHRAGHAVT-57/Lensqivo/actions/runs/41894821675). Physical-camera quality and performance still require qualification; this is not a production release. The cover is AI-generated brand artwork, **not** an app screenshot or a photograph captured with Lensqivo.
+> Native still capture, natural beauty controls and a camera-first interface. [Download the verified development build](https://github.com/SHUBHRAGHAVT-57/Lensqivo/actions/runs/41894821675/artifacts/13355836022). Debug compilation, strict lint, 814 core assertions and 31 native tests on each of two emulator OS versions pass in [CI](https://github.com/SHUBHRAGHAVT-57/Lensqivo/actions/runs/41894821675). Physical-camera quality and performance still require qualification; this is not a production release. The cover is original brand artwork, **not** an app screenshot or a photograph captured with Lensqivo.
 
 ## A name with a point of view
 
@@ -179,6 +179,8 @@ The [Android quality workflow](https://github.com/SHUBHRAGHAVT-57/Lensqivo/actio
 RAW video, Log/HDR, LUT import, manual sensor controls, cloud sync and subscriptions are outside this version. The [validation checklist](docs/validation.md) defines the release gates and device matrix.
 
 ## Contributing and ownership
+
+Maintained by [Shubh Raghav](https://github.com/SHUBHRAGHAVT-57).
 
 Bug reports with reproduction steps and expected/actual behavior are useful. Hardware details are optional; share them privately if preferred. Do not include personal photos, private media links or signing material in public reports.
 

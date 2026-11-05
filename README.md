@@ -137,6 +137,14 @@ bash gradlew :app:connectedDebugAndroidTest
 
 ## Under the viewfinder
 
+| Layer | Implementation |
+| :--- | :--- |
+| Interface | Kotlin and Jetpack Compose |
+| Capture | CameraX still capture and Recorder video |
+| Effects | Media3 GPU effects and shared SDR color transforms |
+| Core | Java capture-state and color-math module |
+| Quality tools | Gradle checks, Android lint and instrumented emulator tests |
+
 ~~~text
 app/                 Kotlin / Compose application
   CameraSession      CameraX resources, capabilities, capture and finalization

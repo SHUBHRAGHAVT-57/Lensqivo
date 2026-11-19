@@ -30,8 +30,13 @@ jobs:
           log-accepted-android-sdk-licenses: false
       - name: Install required Android platforms
         run: sdkmanager 'platforms;android-37.0' 'build-tools;36.0.0'
-      - name: Core behavior, Android build, lint and test compilation
-        run: bash gradlew :core:check :app:assembleDebug :app:lintDebug :app:assembleDebugAndroidTest --no-daemon
+      - name: Clean debug and minified release builds, strict lint and test compilation
+        run: bash gradlew clean :core:check :app:assembleDebug :app:assembleRelease :app:lintDebug :app:lintRelease :app:assembleDebugAndroidTest --no-daemon
+      - name: Record APK identities
+        working-directory: app/build/outputs/apk
+        run: |
+          sha256sum debug/*.apk release/*.apk > SHA256SUMS
+          git rev-parse HEAD > SOURCE.txt
       - name: Enable emulator hardware acceleration
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
@@ -60,7 +65,12 @@ jobs:
           retention-days: 7
           path: |
             app/build/outputs/apk/debug/*.apk
+            app/build/outputs/apk/release/*.apk
+            app/build/outputs/apk/SHA256SUMS
+            app/build/outputs/apk/SOURCE.txt
             app/build/reports/lint-results-debug.html
+            app/build/reports/lint-results-release.html
+            app/build/outputs/mapping/release/**
             core/build/reports/**
             app/build/reports/androidTests/**
             app/build/outputs/androidTest-results/**

@@ -14,6 +14,7 @@
 </p>
 
 <p align="center">
+  <a href="docs/EVALUATION.md">Evaluate Lensqivo</a> &nbsp;·&nbsp;
   <a href="#the-camera">The camera</a> &nbsp;·&nbsp;
   <a href="#build-it">Build it</a> &nbsp;·&nbsp;
   <a href="#under-the-viewfinder">Architecture</a> &nbsp;·&nbsp;
@@ -22,7 +23,7 @@
 
 > **Development build · v0.2.0**
 >
-> Native still capture, natural beauty controls and a camera-first interface. [Download the verified development build](https://github.com/SHUBHRAGHAVT-57/Lensqivo/actions/runs/41894821675/artifacts/13355836022). Debug compilation, strict lint, 814 core assertions and 31 native tests on each of two emulator OS versions pass in [CI](https://github.com/SHUBHRAGHAVT-57/Lensqivo/actions/runs/41894821675). Physical-camera quality and performance still require qualification; this is not a production release. The cover is original brand artwork, **not** an app screenshot or a photograph captured with Lensqivo.
+> Native still capture, eight live looks and optional beauty controls on Android 10 or newer. See [Evaluation](docs/EVALUATION.md) for a screenshot walkthrough, development APK instructions and a local build path. Physical-device qualification is pending. The cover is original brand artwork.
 
 ## A name with a point of view
 
@@ -89,7 +90,7 @@ These are original creative color transforms. They do not claim to reproduce a p
 | Android Studio | A version compatible with Android Gradle Plugin 9.2.1 |
 | Android SDK | Platform 37.0 (API 37) and Build Tools 36.0.0 |
 | JDK | 17 for the CI build |
-| Gradle | 9.8.2 through the included wrapper |
+| Gradle | 9.9.1 through the included wrapper |
 | Minimum Android version | Android 10 / API 29 |
 
 ~~~sh
@@ -127,7 +128,7 @@ The current suite passes **814 assertions** covering capture ownership, repeated
 
 ### Try the development APK
 
-Open the [verified build artifact](https://github.com/SHUBHRAGHAVT-57/Lensqivo/actions/runs/41894821675/artifacts/13355836022), sign in to GitHub if requested, download the ZIP and extract `app-debug.apk`. Open the APK on your Android phone and permit installation from your chosen browser/file manager when Android asks. The APK supports Android 10 and newer; the artifact's API suffix identifies the test emulator. Artifacts are retained for seven days.
+See [Install a development build](docs/EVALUATION.md#install-a-development-build) for the stable workflow link, artifact expiration and local build instructions.
 
 On an isolated Android test device or emulator, run the instrumented UI/recovery tests with:
 
@@ -159,7 +160,7 @@ assets/              Original repository artwork and provenance
 docs/                Product decisions, research and validation requirements
 ~~~
 
-CameraX owns the camera and recording pipeline; the app does not implement its own MediaCodec/MediaMuxer recorder. Media3 supplies live GPU effects. Native stills are region-decoded and processed with that same shader, with one full output bitmap plus bounded overlapping tiles. Export checks available heap and texture limits. A 12 MP output bitmap alone is about 45.8 MiB; capture and GPU resources require additional memory.
+CameraX owns the camera and recording pipeline, and Media3 supplies live GPU effects. Native stills are region-decoded and processed with that same shader, with one full output bitmap plus bounded overlapping tiles. Export checks available heap and texture limits. A 12 MP output bitmap alone is about 45.8 MiB. Capture and GPU resources require additional memory. See [Engineering decisions](docs/ENGINEERING.md) for the design trade-offs.
 
 The CameraX Media3 adapter is currently **`1.0.0-alpha04`**. Its integration is isolated in `CameraSession`; compatibility, memory use and image quality require real-device validation. See the [research and technical decisions](docs/research.md) for sources and trade-offs.
 
@@ -167,15 +168,13 @@ The CameraX Media3 adapter is currently **`1.0.0-alpha04`**. Its integration is 
 
 | Gate | Current evidence |
 | :--- | :--- |
-| Core behavior | 814 assertions passed locally and in CI |
-| Manifest and resource XML | Parsed successfully |
-| Source formatting checks | `git diff --check` passed before publication |
-| Android build and strict lint | [Passed at a51885d](https://github.com/SHUBHRAGHAVT-57/Lensqivo/actions/runs/41894821675) |
-| Instrumented tests | 31 passed on API 29 and 31 passed on API 35 |
-| Native UI rendering | Camera, production Looks/Beauty drawers and contrast inspected from actual emulator captures |
-| Real photo/video, GPU parity and accessibility | Device qualification pending |
+| Core behavior | 814 assertions passed in the standalone Java suite |
+| Android debug build and strict lint | Passed for the settings/tooling draft at [`7f2845a`](https://github.com/SHUBHRAGHAVT-57/Lensqivo/actions/runs/43273262702) |
+| Instrumented tests | 32 passed per emulator on API 29 and API 35 in that draft run |
+| Native UI rendering | Historical Compose captures with a generated reference scene |
+| Real photo/video, preview/export parity and TalkBack | Device qualification pending |
 
-The [Android quality workflow](https://github.com/SHUBHRAGHAVT-57/Lensqivo/actions/workflows/android.yml) validates the wrapper, runs the core gate, builds the debug app, runs strict Android lint, compiles the instrumented tests and executes them on isolated API 29 and API 35 emulators. Synthetic scenes test UI and export correctness; physical cameras, codecs under capture load and thermal performance need separate tests. Check the workflow result before relying on an artifact.
+The [Android quality workflow](https://github.com/SHUBHRAGHAVT-57/Lensqivo/actions/workflows/android.yml) validates the wrapper and runs the core gate. It builds both variants, checks Android lint, and runs debug instrumentation on isolated API 29 and API 35 emulators. Check [Verification](docs/VERIFICATION.md) for the tested revisions and status of the release build gate.
 
 ### What comes next
 
@@ -192,6 +191,6 @@ Maintained by [Shubh Raghav](https://github.com/SHUBHRAGHAVT-57).
 
 Bug reports with reproduction steps and expected/actual behavior are useful. Hardware details are optional; share them privately if preferred. Do not include personal photos, private media links or signing material in public reports.
 
-Lensqivo is an independent implementation. No FilterCam source, presets, shaders, branding or artwork were copied. Gradle wrapper files and AndroidX dependencies retain their upstream licenses. No license grant for Lensqivo's original source has been selected yet; public visibility alone does not grant permission to reuse it. Cover provenance is documented [here](assets/README.md).
+The [MIT license](LICENSE) applies to Lensqivo's original source and documentation owned by Shubh Raghav. The [third-party notices](THIRD_PARTY_NOTICES.md) document upstream licenses and attribution. Artwork and interface capture provenance is in the [assets guide](assets/README.md).
 
 <p align="center"><strong>Lensqivo</strong> · Light. Color. Feeling.</p>

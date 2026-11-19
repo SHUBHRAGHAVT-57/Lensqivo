@@ -166,6 +166,27 @@ class CameraControlsTest {
         compose.onNodeWithContentDescription("Take photo").assertIsDisplayed()
     }
 
+    @Test fun settingsToggleLabelsShareOneAccessibleSwitchAndRespectCaptureLock() {
+        var checked by mutableStateOf(false)
+        var enabled by mutableStateOf(true)
+        var changes = 0
+        compose.setContent {
+            LensqivoTheme {
+                SettingToggle("Composition grid", "A rule-of-thirds guide", checked, enabled) {
+                    checked = it
+                    changes++
+                }
+            }
+        }
+        compose.onAllNodesWithContentDescription("Composition grid").assertCountEquals(1)
+        compose.onNodeWithContentDescription("Composition grid").assertIsOff().assertHeightIsAtLeast(48.dp)
+        compose.onNodeWithText("A rule-of-thirds guide").performClick()
+        compose.onNodeWithContentDescription("Composition grid").assertIsOn()
+        compose.runOnIdle { assertEquals(1, changes); enabled = false }
+        compose.onNodeWithContentDescription("Composition grid").assertIsNotEnabled()
+        compose.runOnIdle { assertEquals(1, changes) }
+    }
+
     @Test fun settingsUseAllThreeRecipeSlotsAndResetAndRecoveryActions() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         lateinit var session: CameraSession

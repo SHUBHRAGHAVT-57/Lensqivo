@@ -1,8 +1,10 @@
 # Validation record and release gates
 
+See [Verification](VERIFICATION.md) for the latest checked revisions and [Evaluation](EVALUATION.md) for development build instructions.
+
 ## Version 0.2 iteration
 
-**Verified source:** `a51885d315e176f639aac929b2551b527d38400b`. [Actions run 41894821675](https://github.com/SHUBHRAGHAVT-57/Lensqivo/actions/runs/41894821675) passed both API 29 and API 35 jobs on 4 November 2026 UTC (5 November locally). Each job passed `:core:check`, `:app:assembleDebug`, strict `:app:lintDebug`, `:app:assembleDebugAndroidTest` and `:app:connectedDebugAndroidTest`: **814 core assertions and 31 passing native tests per emulator**. The API 35 [APK/report artifact](https://github.com/SHUBHRAGHAVT-57/Lensqivo/actions/runs/41894821675/artifacts/13355836022) is a development build.
+**Verified source:** `a51885d315e176f639aac929b2551b527d38400b`. [Actions run 41894821675](https://github.com/SHUBHRAGHAVT-57/Lensqivo/actions/runs/41894821675) passed both API 29 and API 35 jobs on 4 November 2026 UTC (5 November locally). Each job passed `:core:check`, `:app:assembleDebug`, strict `:app:lintDebug`, `:app:assembleDebugAndroidTest` and `:app:connectedDebugAndroidTest` with **814 core assertions and 31 passing native tests per emulator**.
 
 - Local core suite: **814 assertions passed** after adding Cove, Ember, Petal and Fade; the added palette test first failed against the original four-look implementation.
 - Native still capture now avoids targeting ImageCapture with a shared surface effect. Photo export uses a shared SDR shader with overlapping region-decoded tiles, retains captured dimensions/EXIF orientation, and preserves the native original on an edit failure.
@@ -30,7 +32,7 @@
 
 ## Historical version 0.1 CI verification
 
-On 4 November 2026, [Actions run 41839194868](https://github.com/SHUBHRAGHAVT-57/Lensqivo/actions/runs/41839194868) completed successfully at source commit `ed85c25193738e503dc4b42286e0279e25473764`. The required `:core:check`, `:app:assembleDebug`, `:app:lintDebug` and `:app:assembleDebugAndroidTest` tasks passed with warnings treated as errors in Android lint. The development APK and lint report are available in its `lensqivo-development-build` artifact. Instrumented tests were compiled, not executed.
+On 4 November 2026, [Actions run 41839194868](https://github.com/SHUBHRAGHAVT-57/Lensqivo/actions/runs/41839194868) completed successfully at source commit `ed85c25193738e503dc4b42286e0279e25473764`. The required `:core:check`, `:app:assembleDebug`, `:app:lintDebug` and `:app:assembleDebugAndroidTest` tasks passed with warnings treated as errors in Android lint. The run compiled the instrumented tests. Emulator execution began in a later run.
 
 Publication CI initially failed because the runner did not expose `sdkmanager`. A pinned Android setup action provisions the command-line tools explicitly. The next run identified that API 37 uses the SDK package ID `platforms;android-37.0`, rather than `platforms;android-37`; the workflow now installs that exact package. These setup failures occurred before Android compilation, so they do not establish an application compile failure or success.
 

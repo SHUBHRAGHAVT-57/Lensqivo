@@ -5,6 +5,7 @@ plugins {
 android {
     namespace = "com.shubhraghav.lensqivo"
     compileSdk = 37
+    buildToolsVersion = "36.0.0"
     defaultConfig {
         applicationId = "com.shubhraghav.lensqivo"
         minSdk = 29
@@ -39,7 +40,7 @@ dependencies {
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.foundation:foundation")
     implementation("androidx.compose.material3:material3")
-    val camera = "1.6.2"
+    val camera = "1.7.0"
     implementation("androidx.camera:camera-camera2:$camera")
     implementation("androidx.camera:camera-lifecycle:$camera")
     implementation("androidx.camera:camera-view:$camera")

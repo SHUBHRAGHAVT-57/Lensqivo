@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -414,7 +415,7 @@ internal fun CameraSettings(session: CameraSession, audio: Boolean, setAudio: (B
 
 @Composable
 internal fun SettingsPage(back: () -> Unit, content: @Composable ColumnScope.() -> Unit) {
-    Column(Modifier.fillMaxSize().background(Ink).testTag("camera-settings")) {
+    Column(Modifier.fillMaxSize().background(Ink).safeDrawingPadding().testTag("camera-settings")) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
             CameraIconButton(Glyph.BACK, "Back to camera", action = back)
             Text("Settings", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(start = 8.dp))
@@ -442,11 +443,12 @@ private fun SettingsChoice(label: String, value: String, enabled: Boolean, actio
 
 @Composable
 internal fun SettingToggle(title: String, detail: String, checked: Boolean, enabled: Boolean, action: (Boolean) -> Unit) {
-    Row(Modifier.fillMaxWidth().heightIn(min = 64.dp), verticalAlignment = Alignment.CenterVertically,
+    Row(Modifier.fillMaxWidth().heightIn(min = 64.dp)
+        .toggleable(value = checked, enabled = enabled, role = Role.Switch, onValueChange = action)
+        .semantics { contentDescription = title }, verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(16.dp)) {
         Column(Modifier.weight(1f)) { Text(title); Text(detail, color = Muted, style = MaterialTheme.typography.bodySmall) }
-        Switch(checked = checked, onCheckedChange = action, enabled = enabled,
-            modifier = Modifier.semantics { contentDescription = title })
+        Switch(checked = checked, onCheckedChange = null, enabled = enabled)
     }
 }
 

@@ -5,6 +5,7 @@ plugins {
 android {
     namespace = "com.shubhraghav.lensqivo"
     compileSdk = 37
+    buildToolsVersion = "36.0.0"
     defaultConfig {
         applicationId = "com.shubhraghav.lensqivo"
         minSdk = 29
